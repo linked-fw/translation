@@ -9,7 +9,7 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "https://github.com/linked-cm/translation.git"
+    "url": "git+https://github.com/linked-cm/translation.git"
   },
   "homepage": "https://github.com/linked-cm/translation#readme",
   "bugs": {
@@ -51,11 +51,6 @@
       "types": "./lib/esm/key-sync.d.ts",
       "development": "./src/key-sync.ts",
       "import": "./lib/esm/key-sync.js"
-    },
-    "./capability": {
-      "types": "./lib/esm/capability.d.ts",
-      "development": "./src/capability.ts",
-      "import": "./lib/esm/capability.js"
     },
     "./*.js": {
       "types": "./lib/esm/*.d.ts",

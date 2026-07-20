@@ -13,6 +13,6 @@
     "types": ["node"],
     "skipLibCheck": true
   },
-  "files": ["./src/index.ts", "./src/react.tsx", "./src/key-sync.ts", "./src/capability.ts"],
+  "files": ["./src/index.ts", "./src/react.tsx", "./src/key-sync.ts"],
   "include": ["./src/backend.ts"]
 }
