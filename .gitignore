@@ -1,0 +1,8 @@
+# TypeScript output produced beside source by the default compiler config.
+src/**/*.js
+src/**/*.js.map
+src/**/*.d.ts
+
+# Package build output and local dependencies.
+lib/
+node_modules/
