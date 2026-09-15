@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file original="synthetic.txt" datatype="plaintext" source-language="en" target-language="de">
+    <body>
+      <trans-unit id="mq-1" resname="welcome.formatted">
+        <source>Open <bpt id="1">&lt;strong&gt;</bpt>Settings<ept id="1">&lt;/strong&gt;</ept> for <ph id="2">{name}</ph>.</source>
+        <target state="translated">Öffne <bpt id="1">&lt;strong&gt;</bpt>Einstellungen<ept id="1">&lt;/strong&gt;</ept> für <ph id="2">{name}</ph>.</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

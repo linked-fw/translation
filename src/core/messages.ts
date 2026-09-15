@@ -7,15 +7,24 @@
  * ~1,302 call sites (with inline English defaults) are a drop-in swap:
  *   - default formatting is FormatSimple-style `{named}` interpolation (exactly
  *     what serve uses today), so imported strings render identically;
- *   - keys marked `format:'icu'` get minimal plural handling. Full ICU (per-
- *     language plural rules) is the P5 upgrade — this keeps `{count} {shiftWord}`
- *     workarounds working meanwhile.
+ *   - keys marked `format:'icu'` use standards-based ICU MessageFormat with
+ *     the active BCP-47 locale, including plural/select/selectordinal.
  */
-
-/** key → message template, for a single language. */
-export type TranslationMessages = Record<string, string>;
+import { localeDirection } from '../languages.js';
+import IntlMessageFormat from 'intl-messageformat';
 
 export type MessageFormat = 'simple' | 'icu';
+
+/** ICU keys retain their format beside the string in mixed-format catalogs. */
+export interface FormattedTranslationMessage {
+  message: string;
+  format: MessageFormat;
+}
+
+export type TranslationMessage = string | FormattedTranslationMessage;
+
+/** key → message template, for a single language. */
+export type TranslationMessages = Record<string, TranslationMessage>;
 
 /** FormatSimple: replace `{name}` placeholders with `params.name`. Unknown → left as-is. */
 export function interpolate(
@@ -23,58 +32,46 @@ export function interpolate(
   params?: Record<string, unknown>,
 ): string {
   if (!params) return template;
-  return template.replace(/\{\s*(\w+)\s*\}/g, (whole, name) =>
-    name in params ? String(params[name] ?? '') : whole,
+  return template.replace(
+    /\{\s*([\p{L}\p{N}_][\p{L}\p{N}\p{M}_.-]*)\s*\}/gu,
+    (whole, name) =>
+      name in params ? String(params[name] ?? '') : whole,
   );
 }
 
+const ICU_CACHE_LIMIT = 500;
+const icuCache = new Map<string, IntlMessageFormat>();
+
+function compiledIcu(template: string, locale: string): IntlMessageFormat {
+  const key = `${locale}\u0000${template}`;
+  const cached = icuCache.get(key);
+  if (cached) return cached;
+  const compiled = new IntlMessageFormat(template, locale, undefined, {
+    ignoreTag: true,
+  });
+  if (icuCache.size >= ICU_CACHE_LIMIT) {
+    icuCache.delete(icuCache.keys().next().value as string);
+  }
+  icuCache.set(key, compiled);
+  return compiled;
+}
+
 /**
- * Minimal ICU: `{var, plural, one {…} other {…}}` (plus explicit `=N {…}`), with
- * `#` substituted by the count, and `{named}` interpolation elsewhere. English
- * cardinal rule (one iff n===1). NOT a full ICU implementation — P5 swaps in a
- * real per-language plural engine behind this same signature.
+ * Full ICU MessageFormat using the active locale's CLDR plural rules. Invalid
+ * authoring data never crashes the host app: the unformatted template remains
+ * visible and Translation Studio reports the syntax error for repair.
  */
 export function formatIcu(
   template: string,
   params?: Record<string, unknown>,
+  locale = 'en',
 ): string {
-  const p = params ?? {};
-  let result = '';
-  let i = 0;
-  while (i < template.length) {
-    const start = template.indexOf('{', i);
-    if (start === -1) {
-      result += template.slice(i);
-      break;
-    }
-    result += template.slice(i, start);
-    // Scan to the brace that balances `start` (handles one-level-nested cases).
-    let depth = 0;
-    let j = start;
-    for (; j < template.length; j++) {
-      if (template[j] === '{') depth++;
-      else if (template[j] === '}' && --depth === 0) break;
-    }
-    const inner = template.slice(start + 1, j); // contents between the braces
-    const plural = inner.match(/^\s*(\w+)\s*,\s*plural\s*,\s*([\s\S]*)$/);
-    if (plural) {
-      const [, varName, body] = plural;
-      const n = Number(p[varName] ?? 0);
-      const cases: Record<string, string> = {};
-      const caseRe = /(=\d+|zero|one|two|few|many|other)\s*\{([^{}]*)\}/g;
-      let m: RegExpExecArray | null;
-      while ((m = caseRe.exec(body))) cases[m[1]] = m[2];
-      const chosen =
-        cases[`=${n}`] ?? (n === 1 ? cases.one : undefined) ?? cases.other ?? '';
-      result += chosen.replace(/#/g, String(n));
-    } else {
-      // Not a plural block → treat as a simple {name} placeholder.
-      const name = inner.trim();
-      result += name in p ? String(p[name] ?? '') : template.slice(start, j + 1);
-    }
-    i = j + 1;
+  try {
+    const result = compiledIcu(template, locale).format(params as any);
+    return Array.isArray(result) ? result.join('') : String(result);
+  } catch {
+    return interpolate(template, params);
   }
-  return result;
 }
 
 /**
@@ -87,16 +84,23 @@ export function translate(
   defaultValue?: string,
   params?: Record<string, unknown>,
   format: MessageFormat = 'simple',
+  locale = 'en',
 ): string {
-  const template = messages[key] ?? defaultValue ?? key;
-  return format === 'icu'
-    ? formatIcu(template, params)
+  const stored = messages[key];
+  const template =
+    typeof stored === 'string'
+      ? stored
+      : stored?.message ?? defaultValue ?? key;
+  const resolvedFormat =
+    typeof stored === 'object' ? stored.format : format;
+  return resolvedFormat === 'icu'
+    ? formatIcu(template, params, locale)
     : interpolate(template, params);
 }
 
-/** RTL languages (Plan 014 §13 canon). */
+/** @deprecated Use directionFor; this historical set is not a support boundary. */
 export const RTL_LANGUAGES = new Set(['ar', 'ur']);
 
 export function directionFor(language: string): 'ltr' | 'rtl' {
-  return RTL_LANGUAGES.has(language) ? 'rtl' : 'ltr';
+  try { return localeDirection(language); } catch { return 'ltr'; }
 }

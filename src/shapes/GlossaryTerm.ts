@@ -34,4 +34,27 @@ export class GlossaryTerm extends Shape {
   get description(): string {
     return '';
   }
+
+  /**
+   * Termbase entry type (Plan 017 B2-1): 'prefer' = always translate as
+   * {@link translation}; 'keep' = do-not-translate, preserved exactly (proper
+   * nouns, stay-one-language words); 'forbid' = never use this word/spelling —
+   * {@link useInstead} names the replacement (alternative-spelling policing).
+   */
+  @literalProperty({ path: tr.termType, maxCount: 1 })
+  get termType(): string {
+    return 'prefer';
+  }
+
+  /** Replacement wording for a 'forbid' entry. */
+  @literalProperty({ path: tr.useInstead, maxCount: 1 })
+  get useInstead(): string {
+    return '';
+  }
+
+  /** Match with exact casing (proper nouns / all-caps brand styling). */
+  @literalProperty({ path: tr.caseSensitive, maxCount: 1 })
+  get caseSensitive(): boolean {
+    return false;
+  }
 }
