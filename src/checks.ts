@@ -5,14 +5,8 @@
  * are saved), and at import. Enforcement philosophy (ratified 2026-07-23):
  * warn everywhere, gate only at publish — findings never block a save.
  */
-import type {
-  GlossaryTermRecord,
-  TranslationEntryRecord,
-} from './records.js';
-import {
-  findInconsistentTranslations,
-  type ConsistencyEntry,
-} from './mt.js';
+import type { GlossaryTermRecord, TranslationEntryRecord } from './records.js';
+import { findInconsistentTranslations, type ConsistencyEntry } from './mt.js';
 import {
   compareMessageArguments,
   detectLegacyPluralSuffixes,
@@ -23,7 +17,7 @@ export type CheckSeverity = 'error' | 'warning';
 export interface CheckFinding {
   key: string;
   language: string;
-  /** placeholder-integrity | term-keep | term-prefer | term-forbid | source-divergence */
+  /** placeholder-integrity | term-keep | term-prefer | term-required | term-forbid | source-divergence */
   rule: string;
   severity: CheckSeverity;
   message: string;
@@ -31,10 +25,7 @@ export interface CheckFinding {
   suggestion?: string;
 }
 
-export type TermHarvestReason =
-  | 'repeated'
-  | 'capitalized'
-  | 'untranslated';
+export type TermHarvestReason = 'repeated' | 'capitalized' | 'untranslated';
 
 export interface TermHarvestCandidate {
   term: string;
@@ -74,9 +65,7 @@ interface HarvestToken {
 }
 
 function harvestTokens(text: string): HarvestToken[] {
-  const matches = [
-    ...text.matchAll(/[\p{L}\p{N}][\p{L}\p{M}\p{N}'’.-]*/gu),
-  ];
+  const matches = [...text.matchAll(/[\p{L}\p{N}][\p{L}\p{M}\p{N}'’.-]*/gu)];
   return matches.flatMap((match, index) => {
     const value = match[0].replace(/[.'’-]+$/u, '');
     const normalized = value.toLocaleLowerCase();
@@ -89,8 +78,10 @@ function harvestTokens(text: string): HarvestToken[] {
     }
     const first = value[0];
     const capitalized =
-      (index > 0 && first === first.toLocaleUpperCase() && first !== first.toLocaleLowerCase()) ||
-      (/^\p{Lu}{2,}[\p{Lu}\p{N}-]*$/u.test(value));
+      (index > 0 &&
+        first === first.toLocaleUpperCase() &&
+        first !== first.toLocaleLowerCase()) ||
+      /^\p{Lu}{2,}[\p{Lu}\p{N}-]*$/u.test(value);
     return [{ value, normalized, capitalized }];
   });
 }
@@ -104,10 +95,10 @@ function harvestTokens(text: string): HarvestToken[] {
 export function harvestTermCandidates(
   entries: TranslationEntryRecord[],
   languages: string[],
-  termbase: GlossaryTermRecord[] = [],
+  termbase: GlossaryTermRecord[] = []
 ): TermHarvestCandidate[] {
   const existing = new Set(
-    termbase.map((entry) => entry.term.toLocaleLowerCase()),
+    termbase.map((entry) => entry.term.toLocaleLowerCase())
   );
   const aggregate = new Map<
     string,
@@ -164,8 +155,7 @@ export function harvestTermCandidates(
           keys: [...value.keys].sort(),
           languages: [...value.untranslatedLanguages].sort(),
           reasons,
-          suggestedType:
-            capitalized || untranslated ? 'keep' : 'prefer',
+          suggestedType: capitalized || untranslated ? 'keep' : 'prefer',
         },
       ];
     })
@@ -173,7 +163,7 @@ export function harvestTermCandidates(
       (left, right) =>
         right.keys.length - left.keys.length ||
         right.reasons.length - left.reasons.length ||
-        left.term.localeCompare(right.term),
+        left.term.localeCompare(right.term)
     );
 }
 
@@ -188,13 +178,19 @@ const escapeRe = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export function containsTerm(
   text: string,
   term: string,
-  caseSensitive = false,
+  caseSensitive = false
 ): boolean {
-  const boundedStart = /^[\p{L}\p{N}]/u.test(term) ? '(?<![\\p{L}\\p{N}])' : '';
-  const boundedEnd = /[\p{L}\p{N}]$/u.test(term) ? '(?![\\p{L}\\p{N}])' : '';
+  // Chinese and Japanese phrases routinely touch other letters without spaces.
+  // Requiring whitespace-like boundaries would reject valid terms such as 合一.
+  const unspaced =
+    /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(term);
+  const boundedStart =
+    !unspaced && /^[\p{L}\p{N}]/u.test(term) ? '(?<![\\p{L}\\p{N}])' : '';
+  const boundedEnd =
+    !unspaced && /[\p{L}\p{N}]$/u.test(term) ? '(?![\\p{L}\\p{N}])' : '';
   const re = new RegExp(
     `${boundedStart}${escapeRe(term)}${boundedEnd}`,
-    caseSensitive ? 'u' : 'iu',
+    caseSensitive ? 'u' : 'iu'
   );
   return re.test(text);
 }
@@ -210,7 +206,7 @@ export function termbaseViolations(
   sourceText: string,
   translatedText: string,
   termbase: GlossaryTermRecord[],
-  language: string,
+  language: string
 ): Array<Pick<CheckFinding, 'rule' | 'severity' | 'message' | 'suggestion'>> {
   const findings: Array<
     Pick<CheckFinding, 'rule' | 'severity' | 'message' | 'suggestion'>
@@ -232,7 +228,9 @@ export function termbaseViolations(
         });
       }
     } else if (entry.termType === 'forbid') {
-      if (containsTerm(translatedText, entry.term, entry.caseSensitive ?? false)) {
+      if (
+        containsTerm(translatedText, entry.term, entry.caseSensitive ?? false)
+      ) {
         findings.push({
           rule: 'term-forbid',
           severity: 'error',
@@ -243,17 +241,24 @@ export function termbaseViolations(
         });
       }
     } else {
-      // prefer: when the source uses the term, the translation should use the
-      // preferred wording. Advisory — phrasing legitimately varies.
+      // Prefer remains advisory. Require is a source-scoped contract: it
+      // prevents two distinct concepts from collapsing into the same label.
       if (
         entry.translation &&
         containsTerm(sourceText, entry.term, entry.caseSensitive ?? false) &&
-        !containsTerm(translatedText, entry.translation, entry.caseSensitive ?? false)
+        !containsTerm(
+          translatedText,
+          entry.translation,
+          entry.caseSensitive ?? false
+        )
       ) {
         findings.push({
-          rule: 'term-prefer',
-          severity: 'warning',
-          message: `“${entry.term}” is preferably translated as “${entry.translation}”.`,
+          rule: entry.termType === 'require' ? 'term-required' : 'term-prefer',
+          severity: entry.termType === 'require' ? 'error' : 'warning',
+          message:
+            entry.termType === 'require'
+              ? `“${entry.term}” must be translated as “${entry.translation}”.`
+              : `“${entry.term}” is preferably translated as “${entry.translation}”.`,
           suggestion: entry.translation,
         });
       }
@@ -267,11 +272,14 @@ export function violatesTermbase(
   sourceText: string,
   translatedText: string,
   termbase: GlossaryTermRecord[],
-  language: string,
+  language: string
 ): boolean {
-  return termbaseViolations(sourceText, translatedText, termbase, language).some(
-    (f) => f.severity === 'error',
-  );
+  return termbaseViolations(
+    sourceText,
+    translatedText,
+    termbase,
+    language
+  ).some((f) => f.severity === 'error');
 }
 
 /**
@@ -281,18 +289,14 @@ export function violatesTermbase(
 export function runChecks(
   entries: ConsistencyEntry[],
   language: string,
-  termbase: GlossaryTermRecord[] = [],
+  termbase: GlossaryTermRecord[] = []
 ): CheckFinding[] {
   const findings: CheckFinding[] = [];
   for (const entry of entries) {
     const text = entry.units[language]?.text?.trim();
     if (!text || !entry.sourceText.trim()) continue;
     const format = entry.format === 'icu' ? 'icu' : 'simple';
-    const comparison = compareMessageArguments(
-      entry.sourceText,
-      text,
-      format,
-    );
+    const comparison = compareMessageArguments(entry.sourceText, text, format);
     if (comparison.sourceError || comparison.targetError) {
       findings.push({
         key: entry.key,
@@ -300,20 +304,28 @@ export function runChecks(
         rule: 'message-syntax',
         severity: 'error',
         message: comparison.sourceError
-          ? `The source ${format.toUpperCase()} message is invalid: ${comparison.sourceError}`
-          : `The translation ${format.toUpperCase()} message is invalid: ${comparison.targetError}`,
+          ? `The source ${format.toUpperCase()} message is invalid: ${
+              comparison.sourceError
+            }`
+          : `The translation ${format.toUpperCase()} message is invalid: ${
+              comparison.targetError
+            }`,
       });
     } else if (!comparison.valid) {
       const details = [
         comparison.missing.length
-          ? `Missing ${comparison.missing.map((name) => `{${name}}`).join(', ')}.`
+          ? `Missing ${comparison.missing
+              .map((name) => `{${name}}`)
+              .join(', ')}.`
           : '',
         comparison.extra.length
-          ? `Unexpected ${comparison.extra.map((name) => `{${name}}`).join(', ')}.`
+          ? `Unexpected ${comparison.extra
+              .map((name) => `{${name}}`)
+              .join(', ')}.`
           : '',
         ...comparison.typeMismatches.map(
           ({ name, source, target }) =>
-            `{${name}} changes from ${source.join('/')} to ${target.join('/')}.`,
+            `{${name}} changes from ${source.join('/')} to ${target.join('/')}.`
         ),
       ].filter(Boolean);
       findings.push({
@@ -333,17 +345,24 @@ export function runChecks(
         severity: 'warning',
         message: `${legacyPlural
           .map(({ suffixArgument }) => `{${suffixArgument}}`)
-          .join(', ')} is an English suffix variable, not pluralization. It may be omitted in this translation; migrate this key to an ICU plural for locale-aware grammar.`,
+          .join(
+            ', '
+          )} is an English suffix variable, not pluralization. It may be omitted in this translation; migrate this key to an ICU plural for locale-aware grammar.`,
       });
     }
-    for (const violation of termbaseViolations(entry.sourceText, text, termbase, language)) {
+    for (const violation of termbaseViolations(
+      entry.sourceText,
+      text,
+      termbase,
+      language
+    )) {
       findings.push({ key: entry.key, language, ...violation });
     }
   }
   // Identical source ⇒ divergent target. Suggest the majority variant.
   for (const conflict of findInconsistentTranslations(entries, language)) {
     const majority = [...conflict.variants].sort(
-      (a, b) => b.keys.length - a.keys.length || a.text.localeCompare(b.text),
+      (a, b) => b.keys.length - a.keys.length || a.text.localeCompare(b.text)
     )[0];
     for (const variant of conflict.variants) {
       if (variant === majority) continue;
@@ -353,7 +372,11 @@ export function runChecks(
           language,
           rule: 'source-divergence',
           severity: 'warning',
-          message: `“${conflict.sourceText}” is translated “${variant.text}” here but “${majority.text}” on ${majority.keys.length} other key${majority.keys.length === 1 ? '' : 's'}.`,
+          message: `“${conflict.sourceText}” is translated “${
+            variant.text
+          }” here but “${majority.text}” on ${majority.keys.length} other key${
+            majority.keys.length === 1 ? '' : 's'
+          }.`,
           suggestion: majority.text,
         });
       }
@@ -364,7 +387,7 @@ export function runChecks(
 
 /** Findings grouped per key for inline cell badges. */
 export function findingsByKey(
-  findings: CheckFinding[],
+  findings: CheckFinding[]
 ): Map<string, CheckFinding[]> {
   const map = new Map<string, CheckFinding[]>();
   for (const finding of findings) {

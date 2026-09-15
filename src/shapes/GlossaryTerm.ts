@@ -36,8 +36,9 @@ export class GlossaryTerm extends Shape {
   }
 
   /**
-   * Termbase entry type (Plan 017 B2-1): 'prefer' = always translate as
-   * {@link translation}; 'keep' = do-not-translate, preserved exactly (proper
+   * Termbase entry type: 'prefer' advises {@link translation}; 'require'
+   * enforces that wording whenever the source uses the term; 'keep' =
+   * do-not-translate, preserved exactly (proper
    * nouns, stay-one-language words); 'forbid' = never use this word/spelling —
    * {@link useInstead} names the replacement (alternative-spelling policing).
    */

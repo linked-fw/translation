@@ -110,7 +110,7 @@ export var decidedBy = ns('decidedBy'); // WebID of the reviewer
 export var term = ns('term');
 export var glossaryTranslation = ns('glossaryTranslation');
 export var glossaryLanguage = ns('glossaryLanguage');
-export var termType = ns('termType'); // prefer | keep | forbid (Plan 017 B2-1 termbase)
+export var termType = ns('termType'); // prefer | require | keep | forbid (Plan 017 B2-1 termbase)
 export var useInstead = ns('useInstead'); // replacement for a forbidden term/spelling
 export var caseSensitive = ns('caseSensitive'); // boolean — exact-casing matching (proper nouns)
 

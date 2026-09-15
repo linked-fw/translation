@@ -1345,7 +1345,7 @@ export async function listGlossaryTerms(data: {
       id: typeof row.id === 'string' ? row.id : (row.id?.id ?? ''),
       term: row.term,
       termType:
-        row.termType === 'keep' || row.termType === 'forbid'
+        row.termType === 'keep' || row.termType === 'forbid' || row.termType === 'require'
           ? row.termType
           : 'prefer',
       translation: row.translation || undefined,
@@ -1640,7 +1640,7 @@ export class TranslationProvider extends ShapeProvider {
   async upsertGlossaryTerm(data: {
     appId: string;
     term: string;
-    termType?: 'prefer' | 'keep' | 'forbid';
+    termType?: 'prefer' | 'require' | 'keep' | 'forbid';
     translation?: string;
     useInstead?: string;
     language?: string;
@@ -1652,9 +1652,12 @@ export class TranslationProvider extends ShapeProvider {
     const term = requireText(data.term, 'term');
     const language = data.language?.trim() || '';
     const termType =
-      data.termType === 'keep' || data.termType === 'forbid'
+      data.termType === 'keep' || data.termType === 'forbid' || data.termType === 'require'
         ? data.termType
         : 'prefer';
+    if (termType === 'require' && !data.translation?.trim()) {
+      throw new Error('A required glossary term needs a translation.');
+    }
     const id = `${appId.replace(/\/$/, '')}/translation/glossary/${encodeURIComponent(
       term,
     )}--${encodeURIComponent(language || 'all')}`;
@@ -1665,7 +1668,7 @@ export class TranslationProvider extends ShapeProvider {
       term,
       termType,
       translation:
-        termType === 'prefer' ? data.translation?.trim() || undefined : undefined,
+        termType === 'prefer' || termType === 'require' ? data.translation?.trim() || undefined : undefined,
       useInstead:
         termType === 'forbid' ? data.useInstead?.trim() || undefined : undefined,
       language: language || undefined,

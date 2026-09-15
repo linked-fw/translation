@@ -141,7 +141,7 @@ export interface TranslationMemoryPretranslateReport {
 }
 
 /** Termbase entry behavior (Plan 017 B2-1). */
-export type GlossaryTermType = 'prefer' | 'keep' | 'forbid';
+export type GlossaryTermType = 'prefer' | 'require' | 'keep' | 'forbid';
 
 /** Plain RPC-safe termbase entry (steers MT + checks; Plan 014 AD-L / 017 B2). */
 export interface GlossaryTermRecord {

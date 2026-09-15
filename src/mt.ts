@@ -25,7 +25,7 @@ export interface MtItem {
 export interface MtGlossaryEntry {
   term: string;
   /** prefer (default) = translate as `translation`; keep = do-not-translate; forbid = never use. */
-  termType?: 'prefer' | 'keep' | 'forbid';
+  termType?: 'prefer' | 'require' | 'keep' | 'forbid';
   /** Preferred translation (prefer entries); empty/undefined = keep the term as-is. */
   translation?: string;
   /** Replacement wording (forbid entries). */

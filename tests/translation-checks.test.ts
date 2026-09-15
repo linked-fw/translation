@@ -205,3 +205,67 @@ describe('runChecks', () => {
     );
   });
 });
+
+describe('required concept terminology', () => {
+  const concepts = [
+    term({
+      term: 'Oneness',
+      termType: 'require',
+      translation: 'Solidaridad',
+      language: 'es',
+    }),
+    term({
+      term: 'Unity',
+      termType: 'require',
+      translation: 'Unidad',
+      language: 'es',
+    }),
+  ];
+  it('requires the source-specific label without globally forbidding Unity', () => {
+    expect(violatesTermbase('Oneness', 'Unidad', concepts, 'es')).toBe(true);
+    expect(violatesTermbase('Unity', 'Unidad', concepts, 'es')).toBe(false);
+    expect(
+      violatesTermbase(
+        'Oneness and Unity',
+        'Solidaridad y Unidad',
+        concepts,
+        'es'
+      )
+    ).toBe(false);
+    expect(
+      violatesTermbase('Oneness and Unity', 'Unidad y Unidad', concepts, 'es')
+    ).toBe(true);
+    expect(
+      termbaseViolations('Oneness', 'Unidad', concepts, 'es')[0]
+    ).toMatchObject({ rule: 'term-required', severity: 'error' });
+    expect(violatesTermbase('Oneness', 'Unité', concepts, 'fr')).toBe(false);
+  });
+  it('recognizes Chinese and Japanese concepts inside unspaced sentences', () => {
+    const chinese = [
+      term({
+        term: 'Oneness',
+        termType: 'require',
+        translation: '合一',
+        language: 'zh-Hans',
+      }),
+    ];
+    expect(
+      violatesTermbase(
+        'Practice Oneness',
+        '练习合一，创造和平。',
+        chinese,
+        'zh-Hans'
+      )
+    ).toBe(false);
+    expect(
+      violatesTermbase(
+        'Practice Oneness',
+        '练习团结，创造和平。',
+        chinese,
+        'zh-Hans'
+      )
+    ).toBe(true);
+    expect(containsTerm('連帯を実践しましょう', '連帯')).toBe(true);
+    expect(containsTerm('community', 'unity')).toBe(false);
+  });
+});
