@@ -2,6 +2,7 @@ import { zipSync, type Zippable } from 'fflate';
 
 import { canonicalJson } from './release.js';
 import {
+  DEFAULT_TRANSLATION_JSON_ARCHIVE_LIMITS,
   safeUnzipTranslationZip,
   translationZipLimits,
   type TranslationJsonArchiveLimits,
@@ -9,6 +10,17 @@ import {
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
+
+/** Full backups include every language and its revision history. CAT-file
+ * imports retain their smaller defaults; native backups remain bounded too. */
+export const DEFAULT_TRANSLATION_ARCHIVE_LIMITS: TranslationJsonArchiveLimits =
+  Object.freeze({
+    ...DEFAULT_TRANSLATION_JSON_ARCHIVE_LIMITS,
+    maxArchiveBytes: 64 * 1024 * 1024,
+    maxEntryCompressedBytes: 32 * 1024 * 1024,
+    maxEntryUncompressedBytes: 128 * 1024 * 1024,
+    maxTotalUncompressedBytes: 256 * 1024 * 1024,
+  });
 
 export const TRANSLATION_ARCHIVE_MANIFEST_PATH =
   'create-now.translation-archive.json';
@@ -354,7 +366,10 @@ export async function createTranslationArchive(
     snapshot?.revisionWatermark,
     'snapshot.revisionWatermark',
   );
-  const limits = translationZipLimits(options.limits);
+  const limits = translationZipLimits({
+    ...DEFAULT_TRANSLATION_ARCHIVE_LIMITS,
+    ...options.limits,
+  });
   const files: Zippable = Object.create(null);
   const fileInventory: TranslationArchiveFileInventory[] = [];
   for (const collection of TRANSLATION_ARCHIVE_COLLECTIONS) {
@@ -586,7 +601,10 @@ export async function parseTranslationArchive(
   input: Uint8Array,
   options: { limits?: Partial<TranslationJsonArchiveLimits> } = {},
 ): Promise<ParsedTranslationArchive> {
-  const files = safeUnzipTranslationZip(input, options.limits);
+  const files = safeUnzipTranslationZip(input, {
+    ...DEFAULT_TRANSLATION_ARCHIVE_LIMITS,
+    ...options.limits,
+  });
   const manifestBody = files[TRANSLATION_ARCHIVE_MANIFEST_PATH];
   if (!manifestBody) {
     throw new Error('Translation archive manifest is missing.');

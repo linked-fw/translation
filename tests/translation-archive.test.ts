@@ -9,7 +9,7 @@ import {
   type ParsedTranslationArchive,
   type TranslationArchiveSnapshot,
 } from '@_linked/translation/archive';
-import { sha256Hex } from '@_linked/translation';
+import { DEFAULT_TRANSLATION_JSON_ARCHIVE_LIMITS, sha256Hex } from '@_linked/translation';
 
 const SOURCE_APP = 'https://create.now/workspace/source/app/example';
 const TARGET_APP = 'https://create.now/workspace/target/app/example';
@@ -148,6 +148,26 @@ async function parsed(
 }
 
 describe('full-fidelity translation archive', () => {
+  it('round-trips a multilingual collection larger than a CAT file while enforcing explicit limits', async () => {
+    const units = Array.from({ length: 9000 }, (_, index) => ({
+      id: `${SOURCE_APP}/translation/unit/example-${index}/es`,
+      data: {
+        language: 'es',
+        text: Array.from({ length: 160 }, (_, part) => `${index * 160 + part} acción `).join(''),
+      },
+    }));
+    const serialized = await createTranslationArchive(snapshot({ collections: { units } }));
+    expect(serialized.manifest.files.find(file => file.collection === 'units')!.bytes)
+      .toBeGreaterThan(DEFAULT_TRANSLATION_JSON_ARCHIVE_LIMITS.maxEntryUncompressedBytes);
+    const restored = await parseTranslationArchive(serialized.body);
+    expect(restored.collections.units).toHaveLength(units.length);
+    expect(restored.collections.units.find(unit => unit.id === units[8999].id)!.data.text)
+      .toBe(units[8999].data.text);
+    await expect(parseTranslationArchive(serialized.body, {
+      limits: DEFAULT_TRANSLATION_JSON_ARCHIVE_LIMITS,
+    })).rejects.toThrow('uncompressed size limit');
+  }, 60000);
+
   it('serializes deterministically and plans an idempotent same-app restore', async () => {
     const firstArchive = await createTranslationArchive(snapshot());
     const secondArchive = await createTranslationArchive(snapshot());

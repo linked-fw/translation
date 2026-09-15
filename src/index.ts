@@ -158,6 +158,7 @@ export type {
   TranslationJsonSerializeOptions,
 } from './formats/json.js';
 export {
+  DEFAULT_TRANSLATION_ARCHIVE_LIMITS,
   createTranslationArchive,
   parseTranslationArchive,
   planTranslationArchiveRestore,

@@ -9,3 +9,5 @@ Correct Date writes and serialized timestamp reads for core 2.18.1. Add first-cl
 Add source-scoped required glossary translations, so Oneness can require Solidaridad while Unity keeps Unidad. Required terminology failures reject machine drafts and block publication; existing preferred terms remain advisory. Match Chinese and Japanese glossary terms within unspaced sentences.
 
 Use locale-aware target casing for glossary checks, so Turkish DAYANIŞMA and BİRLİK match their required labels while remaining distinct concepts.
+
+Give full-fidelity backups a separate bounded size profile for all-language units and revision history. Keep CAT import limits, compression-ratio protection, path validation, and archive integrity checks intact.
