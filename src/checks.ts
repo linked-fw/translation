@@ -178,8 +178,23 @@ const escapeRe = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export function containsTerm(
   text: string,
   term: string,
-  caseSensitive = false
+  caseSensitive = false,
+  locale?: string,
 ): boolean {
+  // Unicode regex folding alone does not handle Turkish dotted/dotless I.
+  // Only target text uses its locale; an English source still uses English
+  // matching even when the translation is Turkish.
+  if (!caseSensitive && locale) {
+    try {
+      text = text.toLocaleLowerCase(locale);
+      term = term.toLocaleLowerCase(locale);
+    } catch {
+      // Private/custom language tags can be valid application identifiers
+      // without being supported by the host's locale implementation.
+      text = text.toLowerCase();
+      term = term.toLowerCase();
+    }
+  }
   // Chinese and Japanese phrases routinely touch other letters without spaces.
   // Requiring whitespace-like boundaries would reject valid terms such as 合一.
   const unspaced =
@@ -229,7 +244,7 @@ export function termbaseViolations(
       }
     } else if (entry.termType === 'forbid') {
       if (
-        containsTerm(translatedText, entry.term, entry.caseSensitive ?? false)
+        containsTerm(translatedText, entry.term, entry.caseSensitive ?? false, language)
       ) {
         findings.push({
           rule: 'term-forbid',
@@ -249,7 +264,8 @@ export function termbaseViolations(
         !containsTerm(
           translatedText,
           entry.translation,
-          entry.caseSensitive ?? false
+          entry.caseSensitive ?? false,
+          language,
         )
       ) {
         findings.push({

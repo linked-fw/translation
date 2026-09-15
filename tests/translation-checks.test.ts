@@ -207,6 +207,22 @@ describe('runChecks', () => {
 });
 
 describe('required concept terminology', () => {
+  it('accepts Turkish capitalized practice names without merging the concepts', () => {
+    const glossary = [
+      term({ term: 'Oneness', termType: 'require', translation: 'Dayanışma', language: 'tr' }),
+      term({ term: 'Unity', termType: 'require', translation: 'Birlik', language: 'tr' }),
+    ];
+    expect(termbaseViolations('Meeting 3: Oneness Action Meeting Guide',
+      'TOPLANTI 3: DAYANIŞMA EYLEM TOPLANTISI REHBERİ', glossary, 'tr')).toEqual([]);
+    expect(termbaseViolations('UNITY', 'BİRLİK', glossary, 'tr')).toEqual([]);
+    expect(violatesTermbase('Oneness', 'BİRLİK', glossary, 'tr')).toBe(true);
+    expect(containsTerm('DAYANIŞMA', 'Dayanışma', true, 'tr')).toBe(false);
+  });
+
+  it('keeps glossary checks usable for custom language identifiers', () => {
+    expect(containsTerm('SOLIDARITY', 'Solidarity', false, 'x-custom')).toBe(true);
+  });
+
   const concepts = [
     term({
       term: 'Oneness',

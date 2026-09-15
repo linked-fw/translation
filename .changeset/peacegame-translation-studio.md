@@ -7,3 +7,5 @@ Release Translation Studio's portable runtime and authoring contracts: CDN and v
 Correct Date writes and serialized timestamp reads for core 2.18.1. Add first-class language resources, configurable fallback chains, script-aware direction, and a public language-catalog loader so React clients can adopt new languages through configuration.
 
 Add source-scoped required glossary translations, so Oneness can require Solidaridad while Unity keeps Unidad. Required terminology failures reject machine drafts and block publication; existing preferred terms remain advisory. Match Chinese and Japanese glossary terms within unspaced sentences.
+
+Use locale-aware target casing for glossary checks, so Turkish DAYANIŞMA and BİRLİK match their required labels while remaining distinct concepts.
