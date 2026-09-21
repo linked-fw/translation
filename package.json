@@ -2,6 +2,7 @@
   "name": "@_linked/translation",
   "description": "LINKED translation management — graph-native i18n keys + units, Tolgee-compatible client, CDN delivery. Built inside Create Now for now; structured to extract to its own repo unchanged.",
   "version": "0.1.0",
+  "packageManager": "npm@11.19.1",
   "linkedPackage": true,
   "type": "module",
   "main": "lib/esm/index.js",
@@ -9,11 +10,11 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/linked-cm/translation.git"
+    "url": "git+https://github.com/linked-fw/translation.git"
   },
-  "homepage": "https://github.com/linked-cm/translation#readme",
+  "homepage": "https://github.com/linked-fw/translation#readme",
   "bugs": {
-    "url": "https://github.com/linked-cm/translation/issues"
+    "url": "https://github.com/linked-fw/translation/issues"
   },
   "files": [
     "lib"
@@ -88,6 +89,7 @@
   },
   "devDependencies": {
     "@_linked/cli": "^1.11.1",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^22.13.14",
     "@types/react": "^18.3.24",
