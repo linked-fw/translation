@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file original="synthetic.xml" datatype="xml" source-language="en-US" target-language="fr-FR">
+    <body>
+      <trans-unit id="studio-7" resname="account.saved">
+        <source><g id="10" ctype="x-bold">Saved</g> by <x id="11" ctype="x-user"/>.</source>
+        <target state="final"><g id="10" ctype="x-bold">Enregistré</g> par <x id="11" ctype="x-user"/>.</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

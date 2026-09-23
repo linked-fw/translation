@@ -4,6 +4,7 @@ import { xsd } from '@_linked/core/ontologies/xsd';
 import { tr } from '../ontologies/translation.js';
 import { linkedShape } from '../package.js';
 import { TranslationKey } from './TranslationKey.js';
+import { TranslationKeyVersion } from './TranslationKeyVersion.js';
 
 /**
  * One language's value for a {@link TranslationKey} (Plan 014 AD-H). Explicit
@@ -15,8 +16,23 @@ import { TranslationKey } from './TranslationKey.js';
 export class TranslationUnit extends Shape {
   static targetClass = tr.TranslationUnit;
 
+  /** IRI of the owning Application (explicitly app-scoped per Plan 014 AD-I). */
+  @objectProperty({ path: tr.ofApplication, maxCount: 1 })
+  get ofApplication(): string {
+    return '';
+  }
+
   @objectProperty({ path: tr.ofKey, shape: TranslationKey, maxCount: 1 })
   get ofKey(): TranslationKey {
+    return undefined as any;
+  }
+
+  @objectProperty({
+    path: tr.ofKeyVersion,
+    shape: TranslationKeyVersion,
+    maxCount: 1,
+  })
+  get ofKeyVersion(): TranslationKeyVersion {
     return undefined as any;
   }
 
@@ -38,13 +54,19 @@ export class TranslationUnit extends Shape {
   }
 
   @literalProperty({ path: tr.updatedAt, datatype: xsd.dateTime, maxCount: 1 })
-  get updatedAt(): string {
-    return '';
+  get updatedAt(): Date {
+    return new Date(0);
   }
 
   /** WebID (IRI) of the last editor. */
   @objectProperty({ path: tr.updatedBy, maxCount: 1 })
   get updatedBy(): string {
+    return '';
+  }
+
+  /** Current-value provenance (`tm` for exact translation-memory reuse). */
+  @literalProperty({ path: tr.origin, maxCount: 1 })
+  get origin(): string {
     return '';
   }
 }

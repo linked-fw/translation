@@ -1,3 +1,7 @@
+import {
+  languageFallbacks,
+  type TranslationLanguageDefinition,
+} from './languages.js';
 import React, {
   createContext,
   useCallback,
@@ -27,10 +31,22 @@ import {
 export interface TranslationLanguage {
   tag: string; // BCP-47
   label: string;
+  direction?: 'ltr' | 'rtl';
+  fallback?: string;
+}
+
+export interface TranslationCallOptions {
+  /** Explicit syntax for an inline default before per-key catalog metadata loads. */
+  format?: MessageFormat;
 }
 
 interface TranslationContextValue {
-  t: (key: string, defaultValue?: string, params?: Record<string, unknown>) => string;
+  t: (
+    key: string,
+    defaultValue?: string,
+    params?: Record<string, unknown>,
+    options?: TranslationCallOptions
+  ) => string;
   language: string;
   setLanguage: (tag: string) => void;
   languages: TranslationLanguage[];
@@ -42,6 +58,8 @@ const TranslationContext = createContext<TranslationContextValue | null>(null);
 export interface TranslationProviderProps {
   children: React.ReactNode;
   languages: TranslationLanguage[];
+  /** Optional live catalog metadata, refreshed independently of an app build. */
+  loadLanguages?: () => Promise<TranslationLanguageDefinition[]>;
   defaultLanguage?: string;
   /** Global message format. 'simple' = FormatSimple (Tolgee-compatible default). */
   format?: MessageFormat;
@@ -53,12 +71,25 @@ export interface TranslationProviderProps {
 
 export function TranslationProvider({
   children,
-  languages,
+  languages: initialLanguages,
+  loadLanguages,
   defaultLanguage = 'en',
   format = 'simple',
   loadMessages,
   storageKey = 'linked.lang',
 }: TranslationProviderProps) {
+  const [remoteLanguages, setRemoteLanguages] =
+    useState<TranslationLanguageDefinition[]>();
+  const languages = remoteLanguages
+    ? remoteLanguages
+        .filter((item) => item.enabled && item.supported)
+        .map((item) => ({
+          tag: item.code,
+          label: item.nativeName,
+          direction: item.direction,
+          fallback: item.fallback,
+        }))
+    : initialLanguages;
   const [language, setLanguageState] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const stored = window.localStorage?.getItem(storageKey);
@@ -66,6 +97,35 @@ export function TranslationProvider({
     }
     return defaultLanguage;
   });
+  const dir =
+    languages.find((item) => item.tag === language)?.direction ??
+    directionFor(language);
+  useEffect(() => {
+    if (!loadLanguages) return;
+    let cancelled = false;
+    loadLanguages()
+      .then((items) => {
+        if (!cancelled) {
+          setRemoteLanguages(items);
+          setMessagesByLang({});
+          const stored =
+            typeof window !== 'undefined'
+              ? window.localStorage?.getItem(storageKey)
+              : null;
+          if (
+            stored &&
+            items.some(
+              (item) => item.code === stored && item.enabled && item.supported
+            )
+          )
+            setLanguageState(stored);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [loadLanguages, storageKey]);
   const [messagesByLang, setMessagesByLang] = useState<
     Record<string, TranslationMessages>
   >({});
@@ -75,7 +135,13 @@ export function TranslationProvider({
   useEffect(() => {
     if (messagesByLang[language]) return;
     let cancelled = false;
-    loadMessages(language)
+    const chain = languageFallbacks(
+      language,
+      defaultLanguage,
+      remoteLanguages
+    ).reverse();
+    Promise.all(chain.map((code) => loadMessages(code).catch(() => ({}))))
+      .then((maps) => Object.assign({}, ...maps) as TranslationMessages)
       .then((msgs) => {
         if (!cancelled) {
           setMessagesByLang((prev) => ({ ...prev, [language]: msgs }));
@@ -87,14 +153,21 @@ export function TranslationProvider({
     return () => {
       cancelled = true;
     };
-  }, [language, loadMessages, messagesByLang]);
+  }, [
+    language,
+    loadMessages,
+    messagesByLang,
+    defaultLanguage,
+    remoteLanguages,
+  ]);
 
-  // Reflect text direction on <html> (RTL for ar/ur).
+  // Reflect the configured language and text direction on <html>.
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      document.documentElement.dir = directionFor(language);
+      document.documentElement.dir = dir;
+      document.documentElement.lang = language;
     }
-  }, [language]);
+  }, [language, dir]);
 
   const setLanguage = useCallback(
     (tag: string) => {
@@ -103,18 +176,30 @@ export function TranslationProvider({
         window.localStorage?.setItem(storageKey, tag);
       }
     },
-    [storageKey],
+    [storageKey]
   );
 
   const t = useCallback(
-    (key: string, defaultValue?: string, params?: Record<string, unknown>) =>
-      translate(messagesByLang[language] ?? {}, key, defaultValue, params, format),
-    [messagesByLang, language, format],
+    (
+      key: string,
+      defaultValue?: string,
+      params?: Record<string, unknown>,
+      options?: TranslationCallOptions
+    ) =>
+      translate(
+        messagesByLang[language] ?? {},
+        key,
+        defaultValue,
+        params,
+        options?.format ?? format,
+        language
+      ),
+    [messagesByLang, language, format]
   );
 
   const value = useMemo<TranslationContextValue>(
-    () => ({ t, language, setLanguage, languages, dir: directionFor(language) }),
-    [t, language, setLanguage, languages],
+    () => ({ t, language, setLanguage, languages, dir }),
+    [t, language, setLanguage, languages, dir]
   );
 
   return (
@@ -126,7 +211,8 @@ export function TranslationProvider({
 
 function useTranslationContext(hook: string): TranslationContextValue {
   const ctx = useContext(TranslationContext);
-  if (!ctx) throw new Error(`${hook} must be used within a <TranslationProvider>`);
+  if (!ctx)
+    throw new Error(`${hook} must be used within a <TranslationProvider>`);
   return ctx;
 }
 
@@ -152,11 +238,13 @@ export function T({
   keyName,
   defaultValue,
   params,
+  format,
 }: {
   keyName: string;
   defaultValue?: string;
   params?: Record<string, unknown>;
+  format?: MessageFormat;
 }) {
   const { t } = useTranslate();
-  return <>{t(keyName, defaultValue, params)}</>;
+  return <>{t(keyName, defaultValue, params, { format })}</>;
 }

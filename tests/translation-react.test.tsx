@@ -21,7 +21,34 @@ function Demo() {
   );
 }
 
+function IcuDemo() {
+  const { t } = useTranslate();
+  return (
+    <span data-testid="icu">
+      {t(
+        'missing.count',
+        '{n, plural, one {# mission} other {# missions}}',
+        { n: 2 },
+        { format: 'icu' },
+      )}
+    </span>
+  );
+}
+
 describe('TranslationProvider / useTranslate', () => {
+  it('formats an explicit ICU inline default before messages load', () => {
+    render(
+      <TranslationProvider
+        languages={[{ tag: 'en', label: 'English' }]}
+        defaultLanguage="en"
+        loadMessages={async () => ({})}
+      >
+        <IcuDemo />
+      </TranslationProvider>,
+    );
+    expect(screen.getByTestId('icu').textContent).toBe('2 missions');
+  });
+
   it('renders the inline default (interpolated) before messages load', () => {
     render(
       <TranslationProvider

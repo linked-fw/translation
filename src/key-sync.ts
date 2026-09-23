@@ -1,4 +1,8 @@
 import ts from 'typescript';
+import type {
+  TranslationDeclaration,
+  TranslationDiscoverySource,
+} from './discovery.js';
 
 export interface ExtractedTranslationKey {
   key: string;
@@ -23,6 +27,11 @@ export interface TranslationKeySyncReport {
   unchanged: string[];
   orphaned: string[];
   conflicts: Array<{ key: string; defaults: string[] }>;
+}
+
+export interface TranslationKeySyncOptions {
+  /** Report changes without writing them to the target. */
+  dryRun?: boolean;
 }
 
 function literalText(node: ts.Node | undefined): string | undefined {
@@ -79,6 +88,40 @@ export function extractTranslationKeys(
   return extracted;
 }
 
+/** Adapt the shipped static extractor to the portable discovery contract. */
+export function translationDeclarationsFromExtractedKeys(
+  extracted: Iterable<ExtractedTranslationKey>,
+): TranslationDeclaration[] {
+  return [...extracted].map((item) => ({
+    schemaVersion: 1,
+    key: item.key,
+    sourceText: item.sourceText,
+    kind: 'ui',
+    format: 'simple',
+    provenance: {
+      source: 'code',
+      sourceId: item.file,
+      authoritative: true,
+      file: item.file,
+      line: item.line,
+    },
+  }));
+}
+
+/** Create a portable source from already-extracted static call sites. */
+export function staticTranslationDiscoverySource(
+  extracted: Iterable<ExtractedTranslationKey>,
+  name = 'static-code',
+): TranslationDiscoverySource {
+  const declarations = translationDeclarationsFromExtractedKeys(extracted);
+  return {
+    name,
+    async *discover() {
+      yield* declarations;
+    },
+  };
+}
+
 /**
  * Apply extracted keys. Source drift is delegated to the provider, which marks
  * existing units stale. Orphans are deliberately report-only.
@@ -87,6 +130,7 @@ export async function syncTranslationKeys(
   target: TranslationKeySyncTarget,
   appId: string,
   extracted: ExtractedTranslationKey[],
+  options: TranslationKeySyncOptions = {},
 ): Promise<TranslationKeySyncReport> {
   const existing = await target.list({ appId });
   const existingByKey = new Map(existing.map((item) => [item.key, item]));
@@ -112,7 +156,9 @@ export async function syncTranslationKeys(
       report.unchanged.push(key);
       continue;
     }
-    await target.upsert({ appId, key, sourceText, kind: 'ui' });
+    if (!options.dryRun) {
+      await target.upsert({ appId, key, sourceText, kind: 'ui' });
+    }
   }
   report.orphaned = existing
     .map((item) => item.key)
