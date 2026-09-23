@@ -13,6 +13,14 @@
     "types": ["node"],
     "skipLibCheck": true
   },
+  // Compile the WHOLE src folder, not the entry graph.
+  //
+  // The exports map advertises subpaths via a `./*` wildcard, so every module under src/ is
+  // reachable by a consumer whether or not index.ts imports it. An entry-graph tsconfig emits
+  // lib/ output only for what the entries happen to reach, which advertises subpaths with no
+  // .js behind them — the defect swept out of the other packages. scripts/check-subpaths.mjs
+  // enforces the result.
   "files": ["./src/index.ts", "./src/react.tsx", "./src/key-sync.ts"],
-  "include": ["./src/backend.ts"]
+  "include": ["./src/backend.ts", "./src/**/*.ts", "./src/**/*.tsx"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx", "node_modules", "lib"]
 }
