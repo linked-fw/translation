@@ -6,7 +6,7 @@
   "linkedPackage": true,
   "type": "module",
   "main": "lib/esm/index.js",
-  "types": "./lib/esm/index.d.ts",
+  "types": "index.d.ts",
   "license": "ISC",
   "repository": {
     "type": "git",
