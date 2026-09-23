@@ -1,5 +1,16 @@
 # @\_linked/translation
 
+## 0.2.2
+
+### Patch Changes
+
+- [#9](https://github.com/linked-fw/translation/pull/9) [`1ef9ac0`](https://github.com/linked-fw/translation/commit/1ef9ac0097174844fd33cba3d4b67206bc851d8b) Thanks [@flyon](https://github.com/flyon)! - Fix the root type entry under Node10 module resolution. `types` was `./lib/esm/index.d.ts`, which
+  `typesVersions` then re-matched against its `*` pattern and rewrote to `lib/esm/lib/esm/index.d.ts`
+  — a path that does not exist. Subpath imports resolved (they have no prefix to double), so only
+  the bare `@_linked/translation` import failed, with `TS2307: Cannot find module`. Create Now
+  resolves with `moduleResolution: node`, so every root import of this package was unresolvable
+  there. Now `index.d.ts`, matching `@_linked/core`, which `typesVersions` maps correctly.
+
 ## 0.2.1
 
 ### Patch Changes
