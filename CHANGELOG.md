@@ -39,8 +39,11 @@
 
   Give full-fidelity backups a separate bounded size profile for all-language units and revision history. Keep CAT import limits, compression-ratio protection, path validation, and archive integrity checks intact.
 
-## 0.1.1
-
-### Patch Changes
-
-- [#3](https://github.com/linked-fw/translation/pull/3) [`81672d8`](https://github.com/linked-fw/translation/commit/81672d8299320f4ab05eb6c997ef671dbc487fb7) Thanks [@flyon](https://github.com/flyon)! - Adopt the shared release pipeline: declare npm as the package manager, point `repository.url` at the `linked-fw` org, mark `package-lock.json` as a generated file, and add the `@testing-library/dom` devDependency the test suite needs on a peer-less install.
+<!--
+0.1.1 and 0.1.0 are deliberately absent. Both were version bumps made in this repo before the
+package had ever been published; the 0.1.1 release run failed with a 404 on PUT, because the
+org npm token is scoped stage-only and cannot create a new name. Neither version exists on the
+registry and neither can be installed, so listing them would have opened this package's public
+history with two entries nobody can resolve. The work they described — adopting the shared
+release pipeline — is part of the first published release.
+-->
