@@ -1,7 +1,7 @@
 {
   "name": "@_linked/translation",
   "description": "LINKED translation management — graph-native i18n keys + units, Tolgee-compatible client, CDN delivery. Built inside Create Now for now; structured to extract to its own repo unchanged.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "packageManager": "npm@11.19.1",
   "linkedPackage": true,
   "type": "module",
@@ -128,7 +128,6 @@
     "react-dom": "^18.3.1",
     "typescript": "5.7.3",
     "vitest": "^3.2.4",
-    "@testing-library/dom": "^10.4.1",
     "@changesets/cli": "^2.29.8",
     "@changesets/changelog-github": "^0.5.2"
   }
