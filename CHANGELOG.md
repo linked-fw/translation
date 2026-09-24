@@ -1,5 +1,17 @@
 # @\_linked/translation
 
+## 0.2.3
+
+### Patch Changes
+
+- [#12](https://github.com/linked-fw/translation/pull/12) [`78d903b`](https://github.com/linked-fw/translation/commit/78d903b75a701a7b89d875cb4c1409036d39756b) Thanks [@flyon](https://github.com/flyon)! - Export `./package.json`, so tooling that reads a dependency's manifest (bundlers, version checks,
+  `require.resolve`) does not fail with `ERR_PACKAGE_PATH_NOT_EXPORTED`.
+
+  Document the two optional peer dependencies and what each one gates: `typescript` for the
+  `key-sync` entry points, which parse source with the compiler, and `react` for `/react`. Without
+  `typescript` installed, importing `key-sync` fails at runtime naming the missing peer rather than
+  the subpath, which reads like a broken export.
+
 ## 0.2.2
 
 ### Patch Changes
