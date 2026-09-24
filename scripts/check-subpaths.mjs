@@ -46,6 +46,8 @@ const subpaths = [...new Set([...fromExports, ...fromConsumers])].sort();
 function targetsFor(sub) {
   const key = sub === '.' ? '.' : `./${sub}`;
   const entry = exportsMap[key];
+  // A string target is a direct file (e.g. "./package.json"), not a conditions object.
+  if (typeof entry === 'string') return [entry.replace(/^\.\//, '')];
   if (entry && typeof entry === 'object') {
     return [entry.import, entry.types].filter(Boolean).map((t) => t.replace(/^\.\//, ''));
   }

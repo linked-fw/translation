@@ -14,6 +14,21 @@ Graph-native translation management for LINKED applications. It provides:
 npm install @_linked/translation
 ```
 
+### Optional peer dependencies
+
+Two peers are optional, and each gates a specific entry point:
+
+| Peer | Needed for |
+|---|---|
+| `typescript` | `@_linked/translation/key-sync` and `/key-sync/node` |
+| `react` | `@_linked/translation/react` |
+
+The key-sync entry points parse your source with the TypeScript compiler to find `t()` and `<T>`
+call sites, so they `import ts from 'typescript'` directly. Without it installed, importing either
+fails at runtime with `ERR_MODULE_NOT_FOUND: Cannot find package 'typescript'` — the subpath
+itself resolves, so the error names the peer rather than the subpath. Everything else in the
+package works without either peer.
+
 ## Entry points
 
 - `@_linked/translation` — shapes and message model
