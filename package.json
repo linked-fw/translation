@@ -79,6 +79,7 @@
       "development": "./src/exchange.ts",
       "import": "./lib/esm/exchange.js"
     },
+    "./package.json": "./package.json",
     "./*.js": {
       "types": "./lib/esm/*.d.ts",
       "development": "./src/*.ts",
