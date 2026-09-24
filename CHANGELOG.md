@@ -1,5 +1,16 @@
 # @\_linked/translation
 
+## 0.2.4
+
+### Patch Changes
+
+- [#14](https://github.com/linked-fw/translation/pull/14) [`9894d86`](https://github.com/linked-fw/translation/commit/9894d861c281f2926d286503f7a0a52891d1c2d8) Thanks [@flyon](https://github.com/flyon)! - Run `check-subpaths.mjs` from `build` and `prepublishOnly`. It was added in 0.2.1 as the gate
+  that stops a subpath being advertised with no compiled output behind it — the defect that shipped
+  nine broken subpaths in `shape-ui`, and that left `./key-sync/node` unimportable here — but
+  nothing invoked it. It only ran if someone typed it, so the bug class it exists to prevent could
+  ship again silently. `prepublishOnly` calls the CLI directly rather than `npm run build`, so it
+  needed the gate wiring separately or a publish would bypass it.
+
 ## 0.2.3
 
 ### Patch Changes

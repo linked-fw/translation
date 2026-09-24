@@ -1,7 +1,7 @@
 {
   "name": "@_linked/translation",
   "description": "LINKED translation management — graph-native i18n keys + units, Tolgee-compatible client, CDN delivery. Built inside Create Now for now; structured to extract to its own repo unchanged.",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "packageManager": "npm@11.19.1",
   "linkedPackage": true,
   "type": "module",
