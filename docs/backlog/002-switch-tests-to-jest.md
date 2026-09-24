@@ -5,7 +5,7 @@ summary: >
   and this package publishes fine as-is.
 ---
 
-# 001 — Consider switching the test suite from Vitest to Jest
+# 002 — Consider switching the test suite from Vitest to Jest
 
 **Status:** open, low priority. Raised while extracting this package out of Create Now
 (CN plan 049). Nothing depends on it.
