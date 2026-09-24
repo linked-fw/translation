@@ -25,9 +25,9 @@
   },
   "scripts": {
     "start": "npm exec linked dev",
-    "build": "npm exec linked build",
+    "build": "npm exec linked build && node scripts/check-subpaths.mjs",
     "test": "vitest run",
-    "prepublishOnly": "npm exec linked build production",
+    "prepublishOnly": "npm exec linked build production && node scripts/check-subpaths.mjs",
     "postpublish": "npm exec linked register"
   },
   "keywords": [
