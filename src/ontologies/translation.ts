@@ -1,6 +1,4 @@
 import { createNameSpace } from '@_linked/core/utils/NameSpace';
-import { linkedOntology } from '../package.js';
-import * as _this from './translation.js';
 
 /** Lazy-load the (currently empty) serialized ontology graph. */
 export var loadData = () => {
@@ -231,4 +229,3 @@ export const tr = {
   inventoryObservedAt,
 };
 
-linkedOntology(_this, ns, 'translation', loadData, '../data/translation.json');
