@@ -99,7 +99,7 @@
     }
   },
   "dependencies": {
-    "@_linked/core": "^2.18.1",
+    "@_linked/core": "^2.22.8",
     "@_linked/server-utils": "^1.1.0",
     "@formatjs/icu-messageformat-parser": "3.5.15",
     "fflate": "^0.8.2",
