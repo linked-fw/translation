@@ -38,8 +38,13 @@ export const TRANSLATION_CSV_COLUMNS = [
   'exportedAt',
   'revisionWatermark',
   'contractSetHash',
-  'createNowEscaping',
+  'escaping',
 ] as const;
+
+/** Pre-0.3.0 spelling of a column, accepted on import. */
+const LEGACY_CSV_COLUMNS: Readonly<Record<string, CsvColumn>> = {
+  createNowEscaping: 'escaping',
+};
 
 type CsvColumn = (typeof TRANSLATION_CSV_COLUMNS)[number];
 type CsvRecord = Partial<Record<CsvColumn, string>>;
@@ -185,9 +190,12 @@ function entryFormat(value: string | undefined): 'simple' | 'icu' {
 function rowsToRecords(rows: string[][]): CsvRecord[] {
   if (rows.length === 0) throw new Error('Translation CSV is empty.');
   const header = rows[0]!;
+  const canonicalHeader = header.map(
+    (column) => LEGACY_CSV_COLUMNS[column] ?? column,
+  );
   const knownColumns = new Set<string>(TRANSLATION_CSV_COLUMNS);
   const seen = new Set<string>();
-  for (const column of header) {
+  for (const column of canonicalHeader) {
     if (seen.has(column)) {
       throw new Error(`Translation CSV has duplicate column "${column}".`);
     }
@@ -209,10 +217,10 @@ function rowsToRecords(rows: string[][]): CsvRecord[] {
       );
     }
     const raw: Record<string, string> = {};
-    header.forEach((column, index) => {
+    canonicalHeader.forEach((column, index) => {
       if (knownColumns.has(column)) raw[column] = values[index] ?? '';
     });
-    const escaping = raw.createNowEscaping;
+    const escaping = raw.escaping;
     const record: CsvRecord = {};
     for (const column of TRANSLATION_CSV_COLUMNS) {
       if (raw[column] !== undefined) {
@@ -370,7 +378,7 @@ function translationValue(record: CsvRecord): TranslationExchangeValue {
 function formulaEscapingMarker(record: CsvRecord): string {
   const escapedColumns = TRANSLATION_CSV_COLUMNS.filter(
     (column) =>
-      column !== 'createNowEscaping' &&
+      column !== 'escaping' &&
       isSpreadsheetDangerous(record[column] ?? ''),
   );
   return `${ESCAPING_VERSION}:${escapedColumns.join('|')}`;
@@ -417,7 +425,7 @@ function serializeRows(document: TranslationExchangeDocument): string {
         revisionWatermark: normalized.revisionWatermark ?? '',
         contractSetHash: normalized.contractSetHash ?? '',
       };
-      record.createNowEscaping = formulaEscapingMarker(record);
+      record.escaping = formulaEscapingMarker(record);
       records.push(record);
     }
   }

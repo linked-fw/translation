@@ -23,7 +23,19 @@ export const DEFAULT_TRANSLATION_ARCHIVE_LIMITS: TranslationJsonArchiveLimits =
   });
 
 export const TRANSLATION_ARCHIVE_MANIFEST_PATH =
+  'linked.translation-archive.json';
+
+/**
+ * Archives written before 0.3.0 named the manifest — and the archive format
+ * itself — after Create Now. Both spellings are read; only the current one is
+ * written. The format id is inside `archiveContentHash`'s input, so a legacy
+ * manifest keeps the value it was hashed with.
+ */
+export const LEGACY_TRANSLATION_ARCHIVE_MANIFEST_PATH =
   'create-now.translation-archive.json';
+
+export const TRANSLATION_ARCHIVE_FORMAT = 'linked-translation-archive';
+export const LEGACY_TRANSLATION_ARCHIVE_FORMAT = 'create-now-translation-archive';
 
 export type TranslationArchiveCollection =
   | 'configuration'
@@ -115,7 +127,9 @@ export interface TranslationArchiveObjectInventory {
 
 export interface TranslationArchiveManifest {
   schemaVersion: 1;
-  format: 'create-now-translation-archive';
+  format:
+    | typeof TRANSLATION_ARCHIVE_FORMAT
+    | typeof LEGACY_TRANSLATION_ARCHIVE_FORMAT;
   appId: string;
   branchId: string;
   revisionWatermark: string;
@@ -355,7 +369,7 @@ function normalizeHash(value: unknown, label: string): string {
   return hash;
 }
 
-/** Create a deterministic, full-fidelity Create Now translation archive. */
+/** Create a deterministic, full-fidelity translation archive. */
 export async function createTranslationArchive(
   snapshot: TranslationArchiveSnapshot,
   options: { limits?: Partial<TranslationJsonArchiveLimits> } = {},
@@ -434,7 +448,7 @@ export async function createTranslationArchive(
     'archiveContentHash'
   > = {
     schemaVersion: 1,
-    format: 'create-now-translation-archive',
+    format: TRANSLATION_ARCHIVE_FORMAT,
     appId,
     branchId,
     revisionWatermark,
@@ -461,7 +475,7 @@ export async function createTranslationArchive(
   });
   safeUnzipTranslationZip(body, limits);
   return {
-    fileName: 'create-now-translations.backup.zip',
+    fileName: 'linked-translations.backup.zip',
     mediaType: 'application/zip',
     body,
     manifest,
@@ -475,7 +489,10 @@ function parseManifest(value: unknown): TranslationArchiveManifest {
       `Unsupported translation archive schemaVersion "${String(raw.schemaVersion)}".`,
     );
   }
-  if (raw.format !== 'create-now-translation-archive') {
+  if (
+    raw.format !== TRANSLATION_ARCHIVE_FORMAT &&
+    raw.format !== LEGACY_TRANSLATION_ARCHIVE_FORMAT
+  ) {
     throw new Error('Unsupported translation archive format.');
   }
   if (!Array.isArray(raw.files) || !Array.isArray(raw.objects)) {
@@ -537,7 +554,8 @@ function parseManifest(value: unknown): TranslationArchiveManifest {
   });
   return {
     schemaVersion: 1,
-    format: 'create-now-translation-archive',
+    // Echoed back, not normalized: it is part of the content hash input.
+    format: raw.format,
     appId: requiredString(raw.appId, 'manifest.appId'),
     branchId: requiredString(raw.branchId, 'manifest.branchId'),
     revisionWatermark: requiredString(
@@ -605,13 +623,15 @@ export async function parseTranslationArchive(
     ...DEFAULT_TRANSLATION_ARCHIVE_LIMITS,
     ...options.limits,
   });
-  const manifestBody = files[TRANSLATION_ARCHIVE_MANIFEST_PATH];
+  const manifestPath =
+    files[TRANSLATION_ARCHIVE_MANIFEST_PATH] !== undefined
+      ? TRANSLATION_ARCHIVE_MANIFEST_PATH
+      : LEGACY_TRANSLATION_ARCHIVE_MANIFEST_PATH;
+  const manifestBody = files[manifestPath];
   if (!manifestBody) {
     throw new Error('Translation archive manifest is missing.');
   }
-  const manifest = parseManifest(
-    decodeJson(manifestBody, TRANSLATION_ARCHIVE_MANIFEST_PATH),
-  );
+  const manifest = parseManifest(decodeJson(manifestBody, manifestPath));
   const actualArchiveHash = await sha256Bytes(
     canonicalBytes(
       archiveContentHashInput(
@@ -624,7 +644,7 @@ export async function parseTranslationArchive(
   }
 
   const allowedPaths = new Set<string>([
-    TRANSLATION_ARCHIVE_MANIFEST_PATH,
+    manifestPath,
     ...manifest.files.map(({ path }) => path),
     ...manifest.objects.filter(({ included }) => included).map(({ path }) => path),
   ]);
