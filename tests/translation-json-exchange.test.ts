@@ -122,7 +122,7 @@ describe('i18next JSON exchange', () => {
     });
     const files = unzipSync(serialized.body);
     expect(Object.keys(files).sort()).toEqual([
-      'create-now.exchange.json',
+      'linked.exchange.json',
       'locales/en.json',
       'locales/es.json',
     ]);

@@ -13,7 +13,11 @@ import { canonicalLanguageTag } from '../key-version.js';
 
 const textDecoder = new TextDecoder('utf-8', { fatal: true });
 const textEncoder = new TextEncoder();
-const SIDECAR_PATH = 'create-now.exchange.json';
+const SIDECAR_PATH = 'linked.exchange.json';
+/** Pre-0.3.0 sidecar path and format id — read, never written. */
+const LEGACY_SIDECAR_PATH = 'create-now.exchange.json';
+const SIDECAR_FORMAT = 'linked-i18next-zip';
+const LEGACY_SIDECAR_FORMAT = 'create-now-i18next-zip';
 const ZIP_LOCAL_FILE_SIGNATURE = 0x04034b50;
 const ZIP_EMPTY_SIGNATURE = 0x06054b50;
 const ZIP_SPANNED_SIGNATURE = 0x08074b50;
@@ -55,9 +59,9 @@ export interface TranslationJsonSerializeOptions {
   limits?: Partial<TranslationJsonArchiveLimits>;
 }
 
-interface CreateNowJsonSidecar {
+interface TranslationJsonSidecar {
   schemaVersion: 1;
-  format: 'create-now-i18next-zip';
+  format: typeof SIDECAR_FORMAT | typeof LEGACY_SIDECAR_FORMAT;
   exchange: TranslationExchangeDocument;
   files: Record<string, string>;
 }
@@ -356,21 +360,24 @@ function parseStandalone(
   });
 }
 
-function sidecarFromBytes(input: Uint8Array): CreateNowJsonSidecar {
-  const value = parseJsonObject(input, SIDECAR_PATH) as unknown as Partial<
-    CreateNowJsonSidecar
+function sidecarFromBytes(
+  input: Uint8Array,
+  path: string,
+): TranslationJsonSidecar {
+  const value = parseJsonObject(input, path) as unknown as Partial<
+    TranslationJsonSidecar
   >;
   if (
     value.schemaVersion !== 1 ||
-    value.format !== 'create-now-i18next-zip' ||
+    (value.format !== SIDECAR_FORMAT && value.format !== LEGACY_SIDECAR_FORMAT) ||
     !value.exchange ||
     !value.files ||
     typeof value.files !== 'object' ||
     Array.isArray(value.files)
   ) {
-    throw new Error('Create Now JSON ZIP sidecar is invalid.');
+    throw new Error('Translation JSON ZIP sidecar is invalid.');
   }
-  return value as CreateNowJsonSidecar;
+  return value as TranslationJsonSidecar;
 }
 
 function assertMapsEqual(
@@ -384,12 +391,12 @@ function assertMapsEqual(
     actualKeys.length !== expectedKeys.length ||
     actualKeys.some((key, index) => key !== expectedKeys[index])
   ) {
-    throw new Error(`${label} keys do not match the Create Now sidecar.`);
+    throw new Error(`${label} keys do not match the exchange sidecar.`);
   }
   for (const key of expectedKeys) {
     if (actual[key] !== expected[key]) {
       throw new Error(
-        `${label} value for "${key}" does not match the Create Now sidecar.`,
+        `${label} value for "${key}" does not match the exchange sidecar.`,
       );
     }
   }
@@ -400,11 +407,13 @@ function parseArchive(
   options: TranslationJsonParseOptions,
 ): ParsedTranslationExchangeDocument {
   const files = safeUnzipTranslationZip(input, options.limits);
-  const sidecarBytes = files[SIDECAR_PATH];
+  const sidecarPath =
+    files[SIDECAR_PATH] !== undefined ? SIDECAR_PATH : LEGACY_SIDECAR_PATH;
+  const sidecarBytes = files[sidecarPath];
   if (!sidecarBytes) {
     return parseTolgeeArchive(files, options);
   }
-  const sidecar = sidecarFromBytes(sidecarBytes);
+  const sidecar = sidecarFromBytes(sidecarBytes, sidecarPath);
   const exchange = validateTranslationExchangeDocument(sidecar.exchange);
   const expectedLanguages = [
     exchange.sourceLanguage,
@@ -418,22 +427,22 @@ function parseArchive(
       .sort()
       .some((language, index) => language !== fileLanguages[index])
   ) {
-    throw new Error('Create Now JSON ZIP language manifest is incomplete.');
+    throw new Error('Translation JSON ZIP language manifest is incomplete.');
   }
   const usedPaths = new Set<string>();
   for (const language of expectedLanguages) {
     const path = sidecar.files[language];
     if (typeof path !== 'string') {
-      throw new Error(`Create Now JSON ZIP has no file for ${language}.`);
+      throw new Error(`Translation JSON ZIP has no file for ${language}.`);
     }
     assertSafeArchivePath(path);
     if (usedPaths.has(path)) {
-      throw new Error(`Create Now JSON ZIP reuses language file "${path}".`);
+      throw new Error(`Translation JSON ZIP reuses language file "${path}".`);
     }
     usedPaths.add(path);
     const bytes = files[path];
     if (!bytes) {
-      throw new Error(`Create Now JSON ZIP is missing language file "${path}".`);
+      throw new Error(`Translation JSON ZIP is missing language file "${path}".`);
     }
     const actual = flattenJsonObject(parseJsonObject(bytes, path));
     const expected = languageValues(exchange, language);
@@ -534,9 +543,9 @@ export function serializeI18nextJsonZip(
     languageFiles[language] = path;
     files[path] = serializeLanguage(exchange, language, layout);
   }
-  const sidecar: CreateNowJsonSidecar = {
+  const sidecar: TranslationJsonSidecar = {
     schemaVersion: 1,
-    format: 'create-now-i18next-zip',
+    format: SIDECAR_FORMAT,
     exchange,
     files: languageFiles,
   };

@@ -10,7 +10,27 @@ import {
 import type { TranslationState } from '../records.js';
 
 const UTF8 = new TextEncoder();
-const CN_NAMESPACE = 'https://create-now.app/ns/translation-exchange/1';
+/**
+ * Our own metadata namespace, a sibling of the translation vocabulary
+ * (`https://id.linked.cm/translation/vocab#`). Files exported before 0.3.0
+ * used a Create Now URI and a `cn:` prefix; the reader below still accepts
+ * both, so those files keep importing.
+ */
+const EXCHANGE_NAMESPACE = 'https://id.linked.cm/translation/exchange/1';
+const PREFIX = 'lt';
+const LEGACY_PREFIX = 'cn';
+/** `from`/`category` on a `<note>`, in current and pre-0.3.0 spelling. */
+const NOTE_ROLES = {
+  description: ['linked-description', 'create-now-description'],
+  target: ['linked-target', 'create-now-target'],
+} as const;
+
+function isNoteRole(
+  value: string | undefined,
+  role: keyof typeof NOTE_ROLES,
+): boolean {
+  return value !== undefined && (NOTE_ROLES[role] as readonly string[]).includes(value);
+}
 const XLIFF_12_NAMESPACE = 'urn:oasis:names:tc:xliff:document:1.2';
 const XLIFF_20_NAMESPACE = 'urn:oasis:names:tc:xliff:document:2.0';
 const XML_MEDIA_TYPE = 'application/xliff+xml';
@@ -301,7 +321,11 @@ function plainText(node: XmlNode | undefined): string | undefined {
 }
 
 function metadata(node: XmlNode, name: string): string | undefined {
-  return node.attributes[`cn:${name}`] ?? attribute(node, name);
+  return (
+    node.attributes[`${PREFIX}:${name}`] ??
+    node.attributes[`${LEGACY_PREFIX}:${name}`] ??
+    attribute(node, name)
+  );
 }
 
 function recognizedState(value: string | undefined): TranslationState | undefined {
@@ -419,12 +443,12 @@ function parse12(
       if (language) targetLanguages.add(language);
       const notes = children(unit, 'note');
       const description = plainText(
-        notes.find((note) => attribute(note, 'from') === 'create-now-description'),
+        notes.find((note) => isNoteRole(attribute(note, 'from'), 'description')),
       );
       const targetNote = plainText(
         notes.find(
           (note) =>
-            attribute(note, 'from') === 'create-now-target' &&
+            isNoteRole(attribute(note, 'from'), 'target') &&
             (!language || !attribute(note, 'lang') || attribute(note, 'lang') === language),
         ),
       );
@@ -475,13 +499,13 @@ function parse20(
       const notes = notesContainer ? children(notesContainer, 'note') : [];
       const description = plainText(
         notes.find(
-          (note) => attribute(note, 'category') === 'create-now-description',
+          (note) => isNoteRole(attribute(note, 'category'), 'description'),
         ),
       );
       const targetNote = plainText(
         notes.find(
           (note) =>
-            attribute(note, 'category') === 'create-now-target' &&
+            isNoteRole(attribute(note, 'category'), 'target') &&
             (!language || !attribute(note, 'lang') || attribute(note, 'lang') === language),
         ),
       );
@@ -545,14 +569,14 @@ function state20(state: TranslationState | undefined): string {
 
 function metadataAttributes(entry: TranslationExchangeEntry): string {
   return [
-    ['cn:key', entry.key],
-    ['cn:namespace', entry.namespace],
-    ['cn:kind', entry.kind],
-    ['cn:format', entry.format],
-    ['cn:key-version-id', entry.keyVersionId],
-    ['cn:source-hash', entry.sourceHash],
-    ['cn:contract-hash', entry.contractHash],
-    ['cn:argument-signature', entry.argumentSignature],
+    [`${PREFIX}:key`, entry.key],
+    [`${PREFIX}:namespace`, entry.namespace],
+    [`${PREFIX}:kind`, entry.kind],
+    [`${PREFIX}:format`, entry.format],
+    [`${PREFIX}:key-version-id`, entry.keyVersionId],
+    [`${PREFIX}:source-hash`, entry.sourceHash],
+    [`${PREFIX}:contract-hash`, entry.contractHash],
+    [`${PREFIX}:argument-signature`, entry.argumentSignature],
   ]
     .filter((pair): pair is [string, string] => pair[1] !== undefined)
     .map(([name, value]) => ` ${name}="${escapeAttribute(value)}"`)
@@ -561,12 +585,12 @@ function metadataAttributes(entry: TranslationExchangeEntry): string {
 
 function rootMetadata(document: TranslationExchangeDocument): string {
   return [
-    ['cn:schema-version', String(document.schemaVersion)],
-    ['cn:app-id', document.appId],
-    ['cn:branch-id', document.branchId],
-    ['cn:exported-at', document.exportedAt],
-    ['cn:revision-watermark', document.revisionWatermark],
-    ['cn:contract-set-hash', document.contractSetHash],
+    [`${PREFIX}:schema-version`, String(document.schemaVersion)],
+    [`${PREFIX}:app-id`, document.appId],
+    [`${PREFIX}:branch-id`, document.branchId],
+    [`${PREFIX}:exported-at`, document.exportedAt],
+    [`${PREFIX}:revision-watermark`, document.revisionWatermark],
+    [`${PREFIX}:contract-set-hash`, document.contractSetHash],
   ]
     .filter((pair): pair is [string, string] => pair[1] !== undefined)
     .map(([name, value]) => ` ${name}="${escapeAttribute(value)}"`)
@@ -611,25 +635,25 @@ function serialize12(document: TranslationExchangeDocument): string {
           const id = deterministicId(entry, index);
           const notes = [
             entry.description
-              ? `<note from="create-now-description">${escapeText(entry.description)}</note>`
+              ? `<note from="${NOTE_ROLES.description[0]}">${escapeText(entry.description)}</note>`
               : '',
             target?.note
-              ? `<note from="create-now-target" xml:lang="${escapeAttribute(language!)}">${escapeText(target.note)}</note>`
+              ? `<note from="${NOTE_ROLES.target[0]}" xml:lang="${escapeAttribute(language!)}">${escapeText(target.note)}</note>`
               : '',
           ].join('');
           return `<trans-unit id="${escapeAttribute(id)}" resname="${escapeAttribute(entry.key)}"${metadataAttributes(entry)}><source>${validatedMixedContent(entry.sourceText, INLINE_12)}</source>${
             language && target
-              ? `<target xml:lang="${escapeAttribute(language)}" state="${state12(target?.state)}" cn:state="${escapeAttribute(target?.state ?? 'untranslated')}">${validatedMixedContent(target?.text ?? '', INLINE_12)}</target>`
+              ? `<target xml:lang="${escapeAttribute(language)}" state="${state12(target?.state)}" ${PREFIX}:state="${escapeAttribute(target?.state ?? 'untranslated')}">${validatedMixedContent(target?.text ?? '', INLINE_12)}</target>`
               : ''
           }${notes}</trans-unit>`;
         })
         .join('');
-      return `<file id="f${fileIndex + 1}" original="create-now" datatype="plaintext" source-language="${escapeAttribute(document.sourceLanguage)}"${
+      return `<file id="f${fileIndex + 1}" original="linked" datatype="plaintext" source-language="${escapeAttribute(document.sourceLanguage)}"${
         language ? ` target-language="${escapeAttribute(language)}"` : ''
       }><body>${units}</body></file>`;
     })
     .join('');
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<xliff xmlns="${XLIFF_12_NAMESPACE}" xmlns:cn="${CN_NAMESPACE}" version="1.2"${rootMetadata(document)}>${files}</xliff>\n`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<xliff xmlns="${XLIFF_12_NAMESPACE}" xmlns:${PREFIX}="${EXCHANGE_NAMESPACE}" version="1.2"${rootMetadata(document)}>${files}</xliff>\n`;
 }
 
 function serialize20(document: TranslationExchangeDocument): string {
@@ -643,15 +667,15 @@ function serialize20(document: TranslationExchangeDocument): string {
             entry.description || target?.note
               ? `<notes>${
                   entry.description
-                    ? `<note category="create-now-description">${escapeText(entry.description)}</note>`
+                    ? `<note category="${NOTE_ROLES.description[0]}">${escapeText(entry.description)}</note>`
                     : ''
                 }${
                   target?.note
-                    ? `<note category="create-now-target" xml:lang="${escapeAttribute(language!)}">${escapeText(target.note)}</note>`
+                    ? `<note category="${NOTE_ROLES.target[0]}" xml:lang="${escapeAttribute(language!)}">${escapeText(target.note)}</note>`
                     : ''
                 }</notes>`
               : '';
-          return `<unit id="${escapeAttribute(id)}" name="${escapeAttribute(entry.key)}"${metadataAttributes(entry)}>${notes}<segment id="s1" state="${state20(target?.state)}" cn:state="${escapeAttribute(target?.state ?? 'untranslated')}"><source>${validatedMixedContent(entry.sourceText, INLINE_20)}</source>${
+          return `<unit id="${escapeAttribute(id)}" name="${escapeAttribute(entry.key)}"${metadataAttributes(entry)}>${notes}<segment id="s1" state="${state20(target?.state)}" ${PREFIX}:state="${escapeAttribute(target?.state ?? 'untranslated')}"><source>${validatedMixedContent(entry.sourceText, INLINE_20)}</source>${
             language && target
               ? `<target xml:lang="${escapeAttribute(language)}">${validatedMixedContent(target?.text ?? '', INLINE_20)}</target>`
               : ''
@@ -659,7 +683,7 @@ function serialize20(document: TranslationExchangeDocument): string {
         })
         .join('');
       return `<file id="f${fileIndex + 1}"${
-        language ? ` cn:target-language="${escapeAttribute(language)}"` : ''
+        language ? ` ${PREFIX}:target-language="${escapeAttribute(language)}"` : ''
       }>${units}</file>`;
     })
     .join('');
@@ -667,7 +691,7 @@ function serialize20(document: TranslationExchangeDocument): string {
     document.targetLanguages.length === 1
       ? ` trgLang="${escapeAttribute(document.targetLanguages[0])}"`
       : '';
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<xliff xmlns="${XLIFF_20_NAMESPACE}" xmlns:cn="${CN_NAMESPACE}" version="2.0" srcLang="${escapeAttribute(document.sourceLanguage)}"${singleTarget}${rootMetadata(document)}>${files}</xliff>\n`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<xliff xmlns="${XLIFF_20_NAMESPACE}" xmlns:${PREFIX}="${EXCHANGE_NAMESPACE}" version="2.0" srcLang="${escapeAttribute(document.sourceLanguage)}"${singleTarget}${rootMetadata(document)}>${files}</xliff>\n`;
 }
 
 function sniffVersion(

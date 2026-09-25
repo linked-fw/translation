@@ -1426,7 +1426,7 @@ export class TranslationProvider extends ShapeProvider {
 
   /**
    * Authoring gate. Reads `linkedAuth` off the request the LINKED server already
-   * populates — framework-level, so this stays portable (no CN/create-now-js
+   * populates — framework-level, so this stays portable (no Create Now
    * import, AD-G). Anonymous callers can no longer read or write an app's
    * translation content via `/call`. Fine-grained "is translation enabled for
    * this app + is the caller a project member" gating is a Create Now concern and
