@@ -1,5 +1,20 @@
 # @\_linked/translation
 
+## 0.4.0
+
+### Minor Changes
+
+- [#20](https://github.com/linked-fw/translation/pull/20) [`61c2fea`](https://github.com/linked-fw/translation/commit/61c2feae6778ac9e8e6a2da59e0c09b546802437) Thanks [@flyon](https://github.com/flyon)! - Require `@_linked/core@^2.22.8` (was `^2.18.1`), and pin it in the lockfile.
+
+  The declared range was wide enough that the resolved core depended on whatever the
+  consumer — or this repo's own CI, via `package-lock.json` — happened to install. Core
+  decides how a shape's IRI is minted, so a stale core made this package emit legacy
+  `data.lincd.org` IRIs instead of the arch-02 `linked.cm` scheme. Which IRIs a published
+  package produces should not be a function of the installer's dependency tree.
+
+  Minor rather than patch: this raises the minimum core a consumer must resolve, so it
+  changes what gets installed rather than only what this package does internally.
+
 ## 0.3.0
 
 ### Minor Changes
