@@ -1,5 +1,11 @@
 # @\_linked/translation
 
+## 0.4.1
+
+### Patch Changes
+
+- [#23](https://github.com/linked-fw/translation/pull/23) [`a21dfd3`](https://github.com/linked-fw/translation/commit/a21dfd3d39a822ec31aa57cadb09919ef8c1dbd7) Thanks [@flyon](https://github.com/flyon)! - Sourcemaps now embed their TypeScript source, so consumers no longer see 'points to missing source files' warnings.
+
 ## 0.4.0
 
 ### Minor Changes
