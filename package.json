@@ -122,7 +122,7 @@
     "@_linked/cli": "^1.11.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.0",
-    "@types/node": "^22.13.14",
+    "@types/node": "^24.0.0",
     "@types/react": "^18.3.24",
     "@types/react-dom": "^18.3.7",
     "jsdom": "^26.1.0",
