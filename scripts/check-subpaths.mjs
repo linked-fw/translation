@@ -13,7 +13,9 @@
  *   - the explicit keys of the exports map (minus the wildcards), and
  *   - scripts/consumer-subpaths.txt, the specifiers Create Now actually imports.
  *
- * Run after `npm run build`. Exits non-zero listing every subpath with no lib/ output.
+ * Run after a build: `npm run build` and `npm test` both end with it. It is in `test` because CI
+ * builds with `linked build` directly, not the package's build script, and then runs `npm test`.
+ * Exits non-zero listing every subpath with no lib/ output.
  */
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
