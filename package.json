@@ -42,53 +42,43 @@
   "exports": {
     ".": {
       "types": "./lib/esm/index.d.ts",
-      "development": "./src/index.ts",
       "import": "./lib/esm/index.js"
     },
     "./react": {
       "types": "./lib/esm/react.d.ts",
-      "development": "./src/react.tsx",
       "import": "./lib/esm/react.js"
     },
     "./key-sync": {
       "types": "./lib/esm/key-sync.d.ts",
-      "development": "./src/key-sync.ts",
       "import": "./lib/esm/key-sync.js"
     },
     "./key-sync/node": {
       "types": "./lib/esm/key-sync-node.d.ts",
-      "development": "./src/key-sync-node.ts",
       "import": "./lib/esm/key-sync-node.js"
     },
     "./shape-catalog": {
       "types": "./lib/esm/shape-catalog.d.ts",
-      "development": "./src/shape-catalog.ts",
       "import": "./lib/esm/shape-catalog.js"
     },
     "./discovery": {
       "types": "./lib/esm/discovery.d.ts",
-      "development": "./src/discovery.ts",
       "import": "./lib/esm/discovery.js"
     },
     "./linked-discovery": {
       "types": "./lib/esm/linked-discovery.d.ts",
-      "development": "./src/linked-discovery.ts",
       "import": "./lib/esm/linked-discovery.js"
     },
     "./exchange": {
       "types": "./lib/esm/exchange.d.ts",
-      "development": "./src/exchange.ts",
       "import": "./lib/esm/exchange.js"
     },
     "./package.json": "./package.json",
     "./*.js": {
       "types": "./lib/esm/*.d.ts",
-      "development": "./src/*.ts",
       "import": "./lib/esm/*.js"
     },
     "./*": {
       "types": "./lib/esm/*.d.ts",
-      "development": "./src/*.ts",
       "import": "./lib/esm/*.js"
     }
   },
