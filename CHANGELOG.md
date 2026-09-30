@@ -1,5 +1,11 @@
 # @\_linked/translation
 
+## 0.4.4
+
+### Patch Changes
+
+- [#41](https://github.com/linked-fw/translation/pull/41) [`a25c520`](https://github.com/linked-fw/translation/commit/a25c520b0425aa40882f805f786d42e207bc358b) Thanks [@flyon](https://github.com/flyon)! - Every export now resolves to the compiled `lib/esm` output, in every environment. The exports map listed a `development` condition pointing at the shipped TypeScript source; Vite enables `development` by default, so a Vite app loaded this package from raw `src/*.ts` in dev. Compiled without this package's tsconfig, the decorated shape classes were transformed with standard (TC39) decorators instead of the legacy decorators `lib/` is built with. `src` is still published so a Linked app's dev server can serve the package from source.
+
 ## 0.4.3
 
 ### Patch Changes
