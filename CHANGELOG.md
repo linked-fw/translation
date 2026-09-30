@@ -1,5 +1,11 @@
 # @\_linked/translation
 
+## 0.4.2
+
+### Patch Changes
+
+- [#31](https://github.com/linked-fw/translation/pull/31) [`89c6f49`](https://github.com/linked-fw/translation/commit/89c6f49a3f958f1d55a77ce08e3376933d0d1474) Thanks [@flyon](https://github.com/flyon)! - Add `shapes/index`, a side-effect-only module that registers every shape this package defines, and have the package entry import it instead of listing shapes one by one. Hosts and consumers can now load `@_linked/translation/shapes/index` to get the package's full shape set registered without pulling in anything else, and a shape added later is picked up by the entry automatically.
+
 ## 0.4.1
 
 ### Patch Changes
