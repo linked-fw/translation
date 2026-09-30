@@ -2,13 +2,7 @@
 // + shapes into the LINKED tree. Safe on client and server — no backend/Node
 // code here (that lives in ./backend.ts). Ontology FIRST, then shapes.
 import './ontologies/translation.register.js';
-import './shapes/TranslationKey.js';
-import './shapes/TranslationKeyVersion.js';
-import './shapes/TranslationRelease.js';
-import './shapes/TranslationUnit.js';
-import './shapes/TranslationRevision.js';
-import './shapes/GlossaryTerm.js';
-import './shapes/TranslationInventoryOrigin.js';
+import './shapes/index.js';
 
 export {
   canAuthorTranslation,
