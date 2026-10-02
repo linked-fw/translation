@@ -44,7 +44,8 @@ const BIGINT_FIVE = BigInt(5);
 const BIGINT_EIGHT = BigInt(8);
 const BIGINT_THIRTY_ONE = BigInt(31);
 let lastUlidTime = -1;
-let lastUlidRandom = new Uint8Array(10);
+// Always a private copy, so it is backed by a plain ArrayBuffer (never a SharedArrayBuffer).
+let lastUlidRandom: Uint8Array<ArrayBuffer> = new Uint8Array(10);
 
 function encodeUlidTime(timestamp: number): string {
   let value = BigInt(timestamp);
@@ -67,7 +68,7 @@ function encodeUlidRandom(bytes: Uint8Array): string {
   return encoded;
 }
 
-function incrementRandom(bytes: Uint8Array): Uint8Array {
+function incrementRandom(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
   const next = new Uint8Array(bytes);
   for (let index = next.length - 1; index >= 0; index--) {
     next[index] = (next[index] + 1) & 0xff;
