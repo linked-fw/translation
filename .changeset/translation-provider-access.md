@@ -9,4 +9,4 @@ Every `TranslationProvider` method except `getMessages` checks the host's author
 - `upsertKey`, `createRelease` and `advanceReleaseHotfix` require `manage` access to the app. `advanceReleaseHotfix` takes the app from the release id and refuses a release stored under another app.
 - `listKeys`, `listEntries`, `listKeyVersions`, `listMemoryMatches`, `listMemory`, `listReleases`, `listGlossary`, `listRevisions` and `listProposals` require `read` access to the app.
 - A caller without a session gets a 401 response.
-- The recorded author of a change is always the signed-in caller of that call.
+- Revisions, proposals, proposal decisions, memory and pretranslation writes, and new keys record the signed-in caller as their author, reviewer or creator; an author named in the call's arguments is ignored.

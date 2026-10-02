@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { runInHttpContext } from '@_linked/server-utils/utils/CallContext';
 import {
   canAuthorTranslation,
   configureTranslationAuthorization,
@@ -49,10 +50,22 @@ function stubStore(): void {
   }
 }
 
+/**
+ * A provider whose method calls each run in an HTTP call context for a request
+ * carrying `linkedAuth`, as the server runs a dispatched call: `this.request`
+ * reads the current call's context.
+ */
 function provider(linkedAuth?: unknown): TranslationProvider {
   const instance = new TranslationProvider(undefined as any, undefined as any);
-  (instance as any).request = linkedAuth ? { linkedAuth } : {};
-  return instance;
+  const request = linkedAuth ? { linkedAuth } : {};
+  return new Proxy(instance, {
+    get(target, key, receiver) {
+      const value = Reflect.get(target, key, receiver);
+      if (typeof value !== 'function') return value;
+      return (...args: unknown[]) =>
+        runInHttpContext(request, {}, () => value.apply(target, args));
+    },
+  });
 }
 
 const signedIn = () => provider({ userAccount: { accountOf: { id: ALICE } } });
@@ -337,9 +350,12 @@ describe('TranslationProvider access gates', () => {
       sourceText: 'Home',
     });
     // Another call re-points the shared provider's request while this one waits.
-    (instance as any).request = {
+    const mallory = {
       linkedAuth: { userAccount: { accountOf: { id: 'https://webid.example/mallory' } } },
     };
+    runInHttpContext(mallory, {}, () => {
+      (instance as any).request = mallory;
+    });
     release();
     await pending;
     expect(seen).toEqual([ALICE]);
