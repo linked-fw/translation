@@ -2,10 +2,11 @@
 '@_linked/translation': minor
 ---
 
-Check the host's authorization resolver on every translation provider method except `getMessages`.
+Every `TranslationProvider` method except `getMessages` checks the host's authorization resolver.
 
-- `upsertKey`, `createRelease` and `advanceReleaseHotfix` now require `manage` access to the app. `advanceReleaseHotfix` takes the app from the release id and refuses a release stored under another app.
-- `listKeys`, `listEntries`, `listKeyVersions`, `listMemoryMatches`, `listMemory`, `listReleases`, `listGlossary`, `listRevisions` and `listProposals` now require `read` access to the app.
-- `canAuthorTranslation` denies when no resolver is configured, when the resolver throws, and when it answers anything other than `true`. Hosts that read or author translations through the provider must call `configureTranslationAuthorization`.
+**Behaviour change — without a resolver, every read and authoring call is denied.** `canAuthorTranslation` answers `false` when no resolver is configured with `configureTranslationAuthorization`, when the resolver throws, and when it answers anything other than `true`. A host that reads or authors translations through the provider must configure a resolver, or those calls fail. `getMessages` is not affected.
+
+- `upsertKey`, `createRelease` and `advanceReleaseHotfix` require `manage` access to the app. `advanceReleaseHotfix` takes the app from the release id and refuses a release stored under another app.
+- `listKeys`, `listEntries`, `listKeyVersions`, `listMemoryMatches`, `listMemory`, `listReleases`, `listGlossary`, `listRevisions` and `listProposals` require `read` access to the app.
 - A caller without a session gets a 401 response.
-- Each method resolves the caller once, before its first `await`, and records that caller as the author.
+- The recorded author of a change is always the signed-in caller of that call.
