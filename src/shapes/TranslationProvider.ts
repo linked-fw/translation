@@ -1,4 +1,5 @@
 import { ShapeProvider } from '@_linked/server-utils/utils/ShapeProvider';
+import { callable, internal } from '@_linked/server-utils/utils/callable';
 import type {
   GlossaryTermRecord,
   TranslationEntryRecord,
@@ -595,6 +596,8 @@ export async function advanceTranslationReleaseHotfix(data: {
   expectedSequence: number;
   hotfixSequence: number;
   manifestHash: string;
+  /** When given, the release must belong to this app. */
+  appId?: string;
 }): Promise<TranslationReleaseRecord> {
   const id = requireText(data.id, 'id');
   const current = await TranslationRelease.select((release) => [
@@ -618,6 +621,9 @@ export async function advanceTranslationReleaseHotfix(data: {
     .catch(() => null);
   const record = current ? toReleaseRecord(current) : null;
   if (!record) throw new Error(`Translation release "${id}" was not found.`);
+  if (data.appId && !sameAppId(record.appId, data.appId)) {
+    throw new Error(`Translation release "${id}" was not found.`);
+  }
   if (record.hotfixSequence !== data.expectedSequence) {
     throw new Error(
       `Translation release advanced from sequence ${data.expectedSequence} to ${record.hotfixSequence}.`,
@@ -632,6 +638,65 @@ export async function advanceTranslationReleaseHotfix(data: {
     hotfixSequence: data.hotfixSequence,
     manifestHash: data.manifestHash,
   };
+}
+
+/**
+ * The app a release IRI belongs to, without a trailing `/`. Release IRIs are
+ * minted by `createTranslationRelease` as `<appId>/translation/release/<releaseId>`
+ * with one trailing `/` of the app id dropped, so an app id `…/app/` and `…/app`
+ * give the same release IRI. Compare with `sameAppId`.
+ */
+function releaseAppId(id: unknown): string {
+  const clean = typeof id === 'string' ? id.trim() : '';
+  const marker = '/translation/release/';
+  const at = clean.lastIndexOf(marker);
+  if (at <= 0 || at + marker.length >= clean.length) {
+    throw new Error('Not a translation release id.');
+  }
+  return clean.slice(0, at);
+}
+
+/** Whether two app ids name the same app, as release IRIs see them. */
+function sameAppId(left: string, right: string): boolean {
+  return left.replace(/\/$/, '') === right.replace(/\/$/, '');
+}
+
+/**
+ * The app id a release is stored under (`ofApplication`), when it is the app
+ * its IRI names. Falls back to the app id read from the IRI, so a missing
+ * release is still checked against that app.
+ */
+async function storedReleaseAppId(id: string, fromIri: string): Promise<string> {
+  const row: any = await TranslationRelease.select((release) => [
+    release.ofApplication,
+  ])
+    .where((release) => release.equals({ id } as any))
+    .one()
+    .catch(() => null);
+  const stored = iri(row?.ofApplication);
+  return stored && sameAppId(stored, fromIri) ? stored : fromIri;
+}
+
+/** WebID of the signed-in caller; never a client-supplied author. */
+function actorWebIdOf(auth: any): string | undefined {
+  const webId =
+    auth?.userAccount?.accountOf?.id ??
+    auth?.webId ??
+    auth?.userAccount?.id ??
+    auth?.userAccount;
+  return typeof webId === 'string' && webId ? webId : undefined;
+}
+
+/**
+ * An error the LINKED server answers with `status` instead of 500. It is
+ * matched by shape (`name` + numeric `status`), as `ServerCallError.is` does,
+ * so no newer `@_linked/server-utils` is needed to throw one.
+ */
+function translationCallError(status: number, message: string): Error {
+  const error = new Error(message) as Error & { status: number };
+  error.name = 'ServerCallError';
+  error.status = status;
+  return error;
 }
 
 function requireText(value: string, label: string): string {
@@ -1426,67 +1491,93 @@ export class TranslationProvider extends ShapeProvider {
 
   /**
    * Authoring gate. Reads `linkedAuth` off the request the LINKED server already
-   * populates — framework-level, so this stays portable (no Create Now
-   * import, AD-G). Anonymous callers can no longer read or write an app's
-   * translation content via `/call`. Fine-grained "is translation enabled for
-   * this app + is the caller a project member" gating is a Create Now concern and
-   * is enforced additionally at the CN route layer (`isTranslationEnabledForApp`).
-   * `getMessages` intentionally stays public — it is the app's runtime string
-   * fetch, not an authoring surface.
+   * populates, so this stays portable (no Create Now import, AD-G).
+   *
+   * Every method except `getMessages` resolves the caller once, synchronously,
+   * before its first `await`, and uses that value for both the permission check
+   * and the recorded author. Reading the request again after an `await` could
+   * see a different call's request on this shared provider instance.
+   *
+   * Whether the caller may act on `appId` is decided by the host's resolver
+   * (`configureTranslationAuthorization`); with none configured, every
+   * authoring and read action is denied. `getMessages` stays public: it is the
+   * app's runtime string fetch, not an authoring surface.
+   *
+   * `requireActor` and `requireAccess` are `@internal()`: helpers of the
+   * methods below, never dispatched over HTTP.
    */
-  private requireAuthor(): void {
-    const account = (this as any).request?.linkedAuth?.userAccount;
-    if (!account) {
-      throw new Error('Authentication required to read or edit translations.');
+  @internal()
+  private requireActor(): string {
+    const auth = (this as any).request?.linkedAuth;
+    if (!auth?.userAccount) {
+      throw translationCallError(
+        401,
+        'Authentication required to read or edit translations.',
+      );
     }
+    const webId = actorWebIdOf(auth);
+    if (!webId) {
+      throw new Error('Translation permission required.');
+    }
+    return webId;
   }
 
+  @internal()
   private async requireAccess(
+    actorWebId: string,
     data: { appId: string; language?: string },
     action: TranslationAuthoringAction,
   ): Promise<void> {
-    this.requireAuthor();
-    const actorWebId = this.authorIri();
+    const appId = typeof data?.appId === 'string' ? data.appId.trim() : '';
+    if (!appId) throw new Error('appId is required.');
     if (
-      !actorWebId ||
       !(await canAuthorTranslation({
-        appId: data.appId,
+        appId,
         actorWebId,
         action,
-        language: data.language,
+        language: data?.language,
       }))
     ) {
       throw new Error(`Translation ${action} permission required.`);
     }
   }
 
+  @callable('user')
   async listKeys(data: { appId: string }) {
-    this.requireAuthor();
+    const actor = this.requireActor();
+    await this.requireAccess(actor, { appId: data?.appId }, 'read');
     return listTranslationKeys(data);
   }
 
+  @callable('user')
   async listEntries(data: { appId: string }): Promise<TranslationEntryRecord[]> {
-    this.requireAuthor();
+    const actor = this.requireActor();
+    await this.requireAccess(actor, { appId: data?.appId }, 'read');
     return listTranslationEntries(data);
   }
 
+  @callable('user')
   async listKeyVersions(data: {
     appId: string;
     key?: string;
   }): Promise<TranslationKeyVersionRecord[]> {
-    this.requireAuthor();
+    const actor = this.requireActor();
+    await this.requireAccess(actor, { appId: data?.appId }, 'read');
     return listTranslationKeyVersions(data);
   }
 
+  @callable('user')
   async listMemoryMatches(data: {
     appId: string;
     key: string;
     language: string;
   }): Promise<TranslationMemoryMatchRecord[]> {
-    this.requireAuthor();
+    const actor = this.requireActor();
+    await this.requireAccess(actor, { appId: data?.appId }, 'read');
     return listTranslationMemoryMatches(data);
   }
 
+  @callable('user')
   async proposeRevision(data: {
     appId: string;
     key: string;
@@ -1495,7 +1586,8 @@ export class TranslationProvider extends ShapeProvider {
     basedOnText?: string;
     note?: string;
   }): Promise<{ id: string }> {
-    await this.requireAccess(data, 'propose');
+    const actor = this.requireActor();
+    await this.requireAccess(actor, data, 'propose');
     const currentEntries = await listTranslationEntries({ appId: data.appId });
     const basedOnText =
       currentEntries.find(({ key }) => key === data.key)?.units[data.language]
@@ -1504,18 +1596,18 @@ export class TranslationProvider extends ShapeProvider {
       ...data,
       basedOnText,
       status: 'proposed',
-      author: this.authorIri(),
+      author: actor,
       authorKind: 'human',
     });
   }
 
+  @callable('user')
   async listProposals(data: {
     appId: string;
     language?: string;
   }): Promise<TranslationRevisionRecord[]> {
-    this.requireAuthor();
-    const actorWebId = this.authorIri();
-    if (!actorWebId) throw new Error('Translation read permission required.');
+    const actorWebId = this.requireActor();
+    await this.requireAccess(actorWebId, { appId: data?.appId }, 'read');
     const proposals = await listTranslationProposals(data);
     const allowed = await Promise.all(
       proposals.map((proposal) =>
@@ -1530,12 +1622,15 @@ export class TranslationProvider extends ShapeProvider {
     return proposals.filter((_, index) => allowed[index]);
   }
 
+  @callable('user')
   async decideProposal(data: {
     appId: string;
     revisionId: string;
     decision: 'accept' | 'reject';
     note?: string;
   }): Promise<TranslationProposalDecision> {
+    const actor = this.requireActor();
+    await this.requireAccess(actor, { appId: data.appId }, 'review');
     const proposal = await getTranslationRevision({
       appId: data.appId,
       revisionId: data.revisionId,
@@ -1544,85 +1639,93 @@ export class TranslationProvider extends ShapeProvider {
       throw new Error('This translation proposal is no longer pending.');
     }
     await this.requireAccess(
+      actor,
       { appId: data.appId, language: proposal.language },
       'review',
     );
-    return decideTranslationProposal(data, this.authorIri());
+    return decideTranslationProposal(data, actor);
   }
 
+  @callable('user')
   async listMemory(data: {
     appId: string;
   }): Promise<TranslationMemoryRecord[]> {
-    this.requireAuthor();
+    const actor = this.requireActor();
+    await this.requireAccess(actor, { appId: data?.appId }, 'read');
     return listTranslationMemory(data);
   }
 
+  @callable('user')
   async pretranslateMemory(data: {
     appId: string;
     language: string;
     dryRun?: boolean;
   }): Promise<TranslationMemoryPretranslateReport> {
-    await this.requireAccess(data, 'run-mt');
-    return pretranslateFromMemory(data, { author: this.authorIri() });
+    const actor = this.requireActor();
+    await this.requireAccess(actor, data, 'run-mt');
+    return pretranslateFromMemory(data, { author: actor });
   }
 
+  @callable('user')
   async applyMemoryMatch(data: {
     appId: string;
     key: string;
     language: string;
     unitId: string;
   }): Promise<TranslationUnitRecord> {
-    await this.requireAccess(data, 'review');
-    return applyTranslationMemoryMatch(data, { author: this.authorIri() });
+    const actor = this.requireActor();
+    await this.requireAccess(actor, data, 'review');
+    return applyTranslationMemoryMatch(data, { author: actor });
   }
 
+  @callable('user')
   async listReleases(data: {
     appId: string;
   }): Promise<TranslationReleaseRecord[]> {
-    this.requireAuthor();
+    const actor = this.requireActor();
+    await this.requireAccess(actor, { appId: data?.appId }, 'read');
     return listTranslationReleases(data);
   }
 
+  @callable('user')
   async createRelease(
     data: Omit<TranslationReleaseRecord, 'id' | 'createdAt'> & {
       createdAt?: string;
     },
   ): Promise<TranslationReleaseRecord> {
-    this.requireAuthor();
+    const actor = this.requireActor();
+    await this.requireAccess(actor, data, 'manage');
     return createTranslationRelease(data);
   }
 
+  @callable('user')
   async advanceReleaseHotfix(data: {
     id: string;
     expectedSequence: number;
     hotfixSequence: number;
     manifestHash: string;
   }): Promise<TranslationReleaseRecord> {
-    this.requireAuthor();
-    return advanceTranslationReleaseHotfix(data);
+    const actor = this.requireActor();
+    const id = typeof data?.id === 'string' ? data.id.trim() : '';
+    const appId = await storedReleaseAppId(id, releaseAppId(id));
+    await this.requireAccess(actor, { appId }, 'manage');
+    return advanceTranslationReleaseHotfix({ ...data, appId });
   }
 
+  @callable('user')
   async upsertKey(data: TranslationKeyInput): Promise<{ id: string }> {
-    this.requireAuthor();
-    return upsertTranslationKey(data, { createdBy: this.authorIri() });
+    const actor = this.requireActor();
+    await this.requireAccess(actor, data, 'manage');
+    return upsertTranslationKey(data, { createdBy: actor });
   }
 
-  /** WebID of the signed-in caller — never trust a client-supplied author. */
-  private authorIri(): string | undefined {
-    const auth = (this as any).request?.linkedAuth;
-    const webId =
-      auth?.userAccount?.accountOf?.id ??
-      auth?.webId ??
-      auth?.userAccount?.id ??
-      auth?.userAccount;
-    return typeof webId === 'string' && webId ? webId : undefined;
-  }
-
+  @callable('user')
   async upsertUnit(data: TranslationUnitInput): Promise<{ id: string }> {
-    await this.requireAccess(data, 'review');
+    const actor = this.requireActor();
+    await this.requireAccess(actor, data, 'review');
     return upsertTranslationUnit(
       { ...data, updatedBy: undefined },
-      { author: this.authorIri(), authorKind: 'human' },
+      { author: actor, authorKind: 'human' },
     );
   }
 
@@ -1632,11 +1735,14 @@ export class TranslationProvider extends ShapeProvider {
    * anchors the IRIs. Uniqueness = (term, language) — upsert is
    * delete-then-create on that identity.
    */
+  @callable('user')
   async listGlossary(data: { appId: string }): Promise<GlossaryTermRecord[]> {
-    this.requireAuthor();
+    const actor = this.requireActor();
+    await this.requireAccess(actor, { appId: data?.appId }, 'read');
     return listGlossaryTerms(data);
   }
 
+  @callable('user')
   async upsertGlossaryTerm(data: {
     appId: string;
     term: string;
@@ -1647,7 +1753,8 @@ export class TranslationProvider extends ShapeProvider {
     caseSensitive?: boolean;
     description?: string;
   }): Promise<{ id: string }> {
-    await this.requireAccess(data, 'manage');
+    const actor = this.requireActor();
+    await this.requireAccess(actor, data, 'manage');
     const appId = requireText(data.appId, 'appId');
     const term = requireText(data.term, 'term');
     const language = data.language?.trim() || '';
@@ -1678,8 +1785,10 @@ export class TranslationProvider extends ShapeProvider {
     return { id };
   }
 
+  @callable('user')
   async deleteGlossaryTerm(data: { appId: string; id: string }): Promise<{ deleted: boolean }> {
-    await this.requireAccess(data, 'manage');
+    const actor = this.requireActor();
+    await this.requireAccess(actor, data, 'manage');
     const appId = requireText(data.appId, 'appId');
     const id = requireText(data.id, 'id');
     // Only glossary nodes under this app's namespace may be deleted here.
@@ -1691,12 +1800,14 @@ export class TranslationProvider extends ShapeProvider {
   }
 
   /** History for one (key, language) cell — newest first (Plan 017 AD-P). */
+  @callable('user')
   async listRevisions(data: {
     appId: string;
     key: string;
     language: string;
   }): Promise<TranslationRevisionRecord[]> {
-    this.requireAuthor();
+    const actor = this.requireActor();
+    await this.requireAccess(actor, { appId: data?.appId }, 'read');
     const appId = requireText(data.appId, 'appId');
     const key = requireText(data.key, 'key');
     const language = requireText(data.language, 'language');
@@ -1721,6 +1832,7 @@ export class TranslationProvider extends ShapeProvider {
     return toRevisionRecords(rows as any);
   }
 
+  @callable('public')
   async getMessages(data: {
     appId: string;
     language: string;
