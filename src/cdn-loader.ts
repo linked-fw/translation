@@ -6,7 +6,7 @@ import {
 /**
  * `loadMessages` factory for the CDN delivery cascade (Plan 016 P2.4, AD-J/AD-K).
  * SIMPLE-POINTER mode (the ratified default): fetch `${base}/{lang}.json` from
- * the published CDN — changing `base` (an app's `tr:cdnTarget`) repoints at
+ * the published CDN — changing `base` (an app's `translation:cdnTarget`) repoints at
  * different cloud files with no call-site change, exactly the Tolgee model.
  * `bundledPath` (same-origin bundled copy) and `devApi` (e.g. the `getMessages`
  * RPC for live dev editing) are optional fallbacks, tried in the order given.

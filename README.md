@@ -93,8 +93,10 @@ are deliberately not part of this package. They live in Create Now's
 `translation-studio` feature so applications can use this runtime without
 depending on Create Now.
 
-The package targets `@_linked/core` 2.14.4 and uses the permanent identifier
-namespace `https://id.linked.cm/translation/`.
+The package targets `@_linked/core` 2.14.4. Its ontology terms live at
+`https://linked.cm/ont/translation/` (prefix `translation:`), following the
+first-party rule `https://linked.cm/ont/{ontologySlug}/{localName}`. Shape IRIs
+are built from the package `baseUri`, `https://id.linked.cm/translation/`.
 
 ## Open language configuration
 

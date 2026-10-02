@@ -8,8 +8,15 @@ export var loadData = () => {
   );
 };
 
-/** Vocabulary namespace for the translation package. */
-export var ns = createNameSpace('https://id.linked.cm/translation/vocab#');
+/**
+ * Public ontology namespace for the translation package. First-party Linked
+ * ontologies live at `https://linked.cm/ont/{ontologySlug}/{localName}`, where
+ * the ontology slug — and the prefix label — is the package's public slug
+ * (Create Now arch-02, "Public ontology namespace"). So terms are
+ * `https://linked.cm/ont/translation/TranslationKey` and the prefix is
+ * `translation:`. Before 0.5.0 this was `https://id.linked.cm/translation/vocab#`.
+ */
+export var ns = createNameSpace('https://linked.cm/ont/translation/');
 export var _self = ns('');
 
 // ── Classes ─────────────────────────────────────────────────────────────
