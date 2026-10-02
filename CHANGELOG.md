@@ -1,5 +1,24 @@
 # @\_linked/translation
 
+## 0.6.0
+
+### Minor Changes
+
+- [#47](https://github.com/linked-fw/translation/pull/47) [`6b722d6`](https://github.com/linked-fw/translation/commit/6b722d6dae4c2e3efc7f233827846ee87f0db38a) Thanks [@flyon](https://github.com/flyon)! - Declare every client-called `TranslationProvider` method for declared-callable dispatch: `getMessages` is `@callable('public')`, and the nineteen read and authoring methods, which already require a session and access, are `@callable('user')`, so a server answers 401 before they run when there is no session. Requires `@_linked/server-utils` `^1.9.0`.
+
+- [#47](https://github.com/linked-fw/translation/pull/47) [`6b722d6`](https://github.com/linked-fw/translation/commit/6b722d6dae4c2e3efc7f233827846ee87f0db38a) Thanks [@flyon](https://github.com/flyon)! - Every `TranslationProvider` method except `getMessages` checks the host's authorization resolver.
+  
+  **Behaviour change — without a resolver, every read and authoring call is denied.** `canAuthorTranslation` answers `false` when no resolver is configured with `configureTranslationAuthorization`, when the resolver throws, and when it answers anything other than `true`. A host that reads or authors translations through the provider must configure a resolver, or those calls fail. `getMessages` is not affected.
+  
+  - `upsertKey`, `createRelease` and `advanceReleaseHotfix` require `manage` access to the app. `advanceReleaseHotfix` takes the app from the release id and refuses a release stored under another app.
+  - `listKeys`, `listEntries`, `listKeyVersions`, `listMemoryMatches`, `listMemory`, `listReleases`, `listGlossary`, `listRevisions` and `listProposals` require `read` access to the app.
+  - A caller without a session gets a 401 response.
+  - Revisions, proposals, proposal decisions, memory and pretranslation writes, and new keys record the signed-in caller as their author, reviewer or creator; an author named in the call's arguments is ignored.
+
+### Patch Changes
+
+- [#47](https://github.com/linked-fw/translation/pull/47) [`6b722d6`](https://github.com/linked-fw/translation/commit/6b722d6dae4c2e3efc7f233827846ee87f0db38a) Thanks [@flyon](https://github.com/flyon)! - `TranslationProvider.requireActor` and `requireAccess` are declared `@internal()`, so a server never dispatches them over HTTP. `advanceReleaseHotfix` accepts releases of an app whose id ends in `/`: it checks access to the app id the release is stored under, the same one `createRelease` checked. Requires `@_linked/server-utils` `^1.9.0`.
+
 ## 0.5.0
 
 ### Minor Changes
