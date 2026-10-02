@@ -1,7 +1,7 @@
 {
   "name": "@_linked/translation",
   "description": "LINKED translation management — graph-native i18n keys + units, Tolgee-compatible client, CDN delivery. Built inside Create Now for now; structured to extract to its own repo unchanged.",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "packageManager": "npm@11.20.0",
   "linkedPackage": true,
   "type": "module",
@@ -94,7 +94,7 @@
     "@_linked/server-utils": "^1.1.0",
     "@formatjs/icu-messageformat-parser": "3.5.20",
     "fflate": "^0.8.2",
-    "intl-messageformat": "11.2.15"
+    "intl-messageformat": "12.1.2"
   },
   "peerDependencies": {
     "react": "*",
@@ -117,10 +117,10 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "jsdom": "^26.1.0",
+    "jsdom": "^30.0.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "typescript": "5.7.3",
+    "typescript": "5.9.3",
     "vitest": "^3.2.4"
   }
 }

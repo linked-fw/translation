@@ -1,5 +1,11 @@
 # @\_linked/translation
 
+## 0.4.5
+
+### Patch Changes
+
+- [#36](https://github.com/linked-fw/translation/pull/36) [`62b1112`](https://github.com/linked-fw/translation/commit/62b11123fe85331c0a0fee1cca30547aff571f0a) Thanks [@renovate](https://github.com/apps/renovate)! - Update `intl-messageformat` to 12.1.2. The 12.0 major only adds opt-in typed message values; the runtime formatter is unchanged, and the bundled ICU parser picks up 3.5.20 (locale-aware hour-cycle resolution for `j` skeletons). ICU output for plurals, select, number/date formats and literal tags is now covered by tests across the production locales.
+
 ## 0.4.4
 
 ### Patch Changes
