@@ -94,7 +94,7 @@
     "@_linked/server-utils": "^1.1.0",
     "@formatjs/icu-messageformat-parser": "3.5.20",
     "fflate": "^0.8.2",
-    "intl-messageformat": "11.2.15"
+    "intl-messageformat": "12.1.2"
   },
   "peerDependencies": {
     "react": "*",
