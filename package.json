@@ -92,9 +92,9 @@
   "dependencies": {
     "@_linked/core": "^2.22.8",
     "@_linked/server-utils": "^1.1.0",
-    "@formatjs/icu-messageformat-parser": "3.5.15",
+    "@formatjs/icu-messageformat-parser": "3.5.20",
     "fflate": "^0.8.2",
-    "intl-messageformat": "11.2.12"
+    "intl-messageformat": "11.2.15"
   },
   "peerDependencies": {
     "react": "*",
