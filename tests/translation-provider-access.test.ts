@@ -299,3 +299,26 @@ describe('canAuthorTranslation', () => {
     await expect(canAuthorTranslation(request)).resolves.toBe(true);
   });
 });
+
+describe('TranslationProvider RPC declarations', () => {
+  const HELPERS = new Set(['constructor', 'requireActor', 'requireAccess']);
+
+  it('declares every method a client calls; only getMessages is public', async () => {
+    const { getOwnCallableLevel } = await import(
+      '@_linked/server-utils/utils/callable'
+    );
+    const methods = Object.getOwnPropertyNames(TranslationProvider.prototype).filter(
+      (name) => !HELPERS.has(name),
+    );
+    expect(methods.length).toBe(20);
+    for (const method of methods) {
+      expect([method, getOwnCallableLevel(TranslationProvider, method)]).toEqual([
+        method,
+        method === 'getMessages' ? 'public' : 'user',
+      ]);
+    }
+    for (const helper of ['requireActor', 'requireAccess']) {
+      expect(getOwnCallableLevel(TranslationProvider, helper)).toBeUndefined();
+    }
+  });
+});
