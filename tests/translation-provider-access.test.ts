@@ -220,6 +220,81 @@ describe('TranslationProvider access gates', () => {
     ).rejects.toThrow('was not found');
   });
 
+  it('advanceReleaseHotfix handles an app id stored with a trailing slash', async () => {
+    const SLASHED = `${APP}/`;
+    const resolver = vi.fn().mockResolvedValue(true);
+    configureTranslationAuthorization(resolver);
+    const created = await (signedIn() as any).createRelease({ ...releaseInput, appId: SLASHED });
+    expect(created.id).toBe(RELEASE_ID);
+    expect(TranslationRelease.create).toHaveBeenCalledWith(
+      expect.objectContaining({ __id: RELEASE_ID, ofApplication: { id: SLASHED } }),
+    );
+    resolver.mockClear();
+    vi.spyOn(TranslationRelease, 'select').mockReturnValue(
+      query([], {
+        id: RELEASE_ID,
+        releaseId: 'r1',
+        ofApplication: { id: SLASHED },
+        branch: { id: `${APP}/branch/main` },
+        hotfixSequence: 0,
+      }),
+    );
+    await expect(
+      (signedIn() as any).advanceReleaseHotfix({
+        id: RELEASE_ID,
+        expectedSequence: 0,
+        hotfixSequence: 1,
+        manifestHash: 'm2',
+      }),
+    ).resolves.toMatchObject({ appId: SLASHED, hotfixSequence: 1 });
+    // asked about the app id exactly as stored, the same one createRelease checked
+    expect(resolver).toHaveBeenCalledTimes(1);
+    expect(resolver).toHaveBeenCalledWith(
+      expect.objectContaining({ appId: SLASHED, action: 'manage' }),
+    );
+    expect(TranslationRelease.update).toHaveBeenCalled();
+  });
+
+  it('advanceReleaseHotfix checks the app named by the id when the release is missing', async () => {
+    const resolver = vi.fn().mockResolvedValue(true);
+    configureTranslationAuthorization(resolver);
+    await expect(
+      (signedIn() as any).advanceReleaseHotfix({
+        id: RELEASE_ID,
+        expectedSequence: 0,
+        hotfixSequence: 1,
+        manifestHash: 'm2',
+      }),
+    ).rejects.toThrow('was not found');
+    expect(resolver).toHaveBeenCalledWith(expect.objectContaining({ appId: APP }));
+  });
+
+  it('advanceReleaseHotfix does not take a stored app id that its id does not name', async () => {
+    const resolver = vi.fn(async (request: TranslationAuthorizationRequest) =>
+      request.appId === OTHER_APP,
+    );
+    configureTranslationAuthorization(resolver);
+    vi.spyOn(TranslationRelease, 'select').mockReturnValue(
+      query([], {
+        id: RELEASE_ID,
+        releaseId: 'r1',
+        ofApplication: { id: OTHER_APP },
+        branch: { id: `${OTHER_APP}/branch/main` },
+        hotfixSequence: 0,
+      }),
+    );
+    await expect(
+      (signedIn() as any).advanceReleaseHotfix({
+        id: RELEASE_ID,
+        expectedSequence: 0,
+        hotfixSequence: 1,
+        manifestHash: 'm2',
+      }),
+    ).rejects.toThrow('Translation manage permission required.');
+    expect(resolver).toHaveBeenCalledWith(expect.objectContaining({ appId: APP }));
+    expect(TranslationRelease.update).not.toHaveBeenCalled();
+  });
+
   it('advanceReleaseHotfix rejects an id that is not a release id', async () => {
     configureTranslationAuthorization(async () => true);
     await expect(
@@ -319,6 +394,19 @@ describe('TranslationProvider RPC declarations', () => {
     }
     for (const helper of ['requireActor', 'requireAccess']) {
       expect(getOwnCallableLevel(TranslationProvider, helper)).toBeUndefined();
+    }
+  });
+
+  it('declares every helper internal, and no client-called method', async () => {
+    const { isDeclaredInternal } = await import('@_linked/server-utils/utils/callable');
+    const names = Object.getOwnPropertyNames(TranslationProvider.prototype).filter(
+      (name) => name !== 'constructor',
+    );
+    for (const name of names) {
+      expect([name, isDeclaredInternal(TranslationProvider, name)]).toEqual([
+        name,
+        HELPERS.has(name),
+      ]);
     }
   });
 });

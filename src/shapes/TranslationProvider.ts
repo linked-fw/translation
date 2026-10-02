@@ -1,5 +1,5 @@
 import { ShapeProvider } from '@_linked/server-utils/utils/ShapeProvider';
-import { callable } from '@_linked/server-utils/utils/callable';
+import { callable, internal } from '@_linked/server-utils/utils/callable';
 import type {
   GlossaryTermRecord,
   TranslationEntryRecord,
@@ -621,7 +621,7 @@ export async function advanceTranslationReleaseHotfix(data: {
     .catch(() => null);
   const record = current ? toReleaseRecord(current) : null;
   if (!record) throw new Error(`Translation release "${id}" was not found.`);
-  if (data.appId && record.appId !== data.appId) {
+  if (data.appId && !sameAppId(record.appId, data.appId)) {
     throw new Error(`Translation release "${id}" was not found.`);
   }
   if (record.hotfixSequence !== data.expectedSequence) {
@@ -641,8 +641,10 @@ export async function advanceTranslationReleaseHotfix(data: {
 }
 
 /**
- * The app a release IRI belongs to. Release IRIs are minted by
- * `createTranslationRelease` as `<appId>/translation/release/<releaseId>`.
+ * The app a release IRI belongs to, without a trailing `/`. Release IRIs are
+ * minted by `createTranslationRelease` as `<appId>/translation/release/<releaseId>`
+ * with one trailing `/` of the app id dropped, so an app id `…/app/` and `…/app`
+ * give the same release IRI. Compare with `sameAppId`.
  */
 function releaseAppId(id: unknown): string {
   const clean = typeof id === 'string' ? id.trim() : '';
@@ -652,6 +654,27 @@ function releaseAppId(id: unknown): string {
     throw new Error('Not a translation release id.');
   }
   return clean.slice(0, at);
+}
+
+/** Whether two app ids name the same app, as release IRIs see them. */
+function sameAppId(left: string, right: string): boolean {
+  return left.replace(/\/$/, '') === right.replace(/\/$/, '');
+}
+
+/**
+ * The app id a release is stored under (`ofApplication`), when it is the app
+ * its IRI names. Falls back to the app id read from the IRI, so a missing
+ * release is still checked against that app.
+ */
+async function storedReleaseAppId(id: string, fromIri: string): Promise<string> {
+  const row: any = await TranslationRelease.select((release) => [
+    release.ofApplication,
+  ])
+    .where((release) => release.equals({ id } as any))
+    .one()
+    .catch(() => null);
+  const stored = iri(row?.ofApplication);
+  return stored && sameAppId(stored, fromIri) ? stored : fromIri;
 }
 
 /** WebID of the signed-in caller; never a client-supplied author. */
@@ -1479,7 +1502,11 @@ export class TranslationProvider extends ShapeProvider {
    * (`configureTranslationAuthorization`); with none configured, every
    * authoring and read action is denied. `getMessages` stays public: it is the
    * app's runtime string fetch, not an authoring surface.
+   *
+   * `requireActor` and `requireAccess` are `@internal()`: helpers of the
+   * methods below, never dispatched over HTTP.
    */
+  @internal()
   private requireActor(): string {
     const auth = (this as any).request?.linkedAuth;
     if (!auth?.userAccount) {
@@ -1495,6 +1522,7 @@ export class TranslationProvider extends ShapeProvider {
     return webId;
   }
 
+  @internal()
   private async requireAccess(
     actorWebId: string,
     data: { appId: string; language?: string },
@@ -1678,7 +1706,8 @@ export class TranslationProvider extends ShapeProvider {
     manifestHash: string;
   }): Promise<TranslationReleaseRecord> {
     const actor = this.requireActor();
-    const appId = releaseAppId(data?.id);
+    const id = typeof data?.id === 'string' ? data.id.trim() : '';
+    const appId = await storedReleaseAppId(id, releaseAppId(id));
     await this.requireAccess(actor, { appId }, 'manage');
     return advanceTranslationReleaseHotfix({ ...data, appId });
   }
