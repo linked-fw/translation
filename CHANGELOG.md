@@ -1,5 +1,21 @@
 # @\_linked/translation
 
+## 0.7.0
+
+### Minor Changes
+
+- [#53](https://github.com/linked-fw/translation/pull/53) [`9e0cb06`](https://github.com/linked-fw/translation/commit/9e0cb0633973882747c764a748c7adccb26e2959) Thanks [@flyon](https://github.com/flyon)! - **Breaking:** shape and package IRIs move to the public first-party rule (Create Now arch-02).
+  The package no longer passes a `baseUri`, so `@_linked/core`'s default root applies:
+  
+  - shapes: `https://id.linked.cm/translation/shape/translation/{ShapeName}` → `https://linked.cm/shape/translation/{ShapeName}` (e.g. `https://linked.cm/shape/translation/TranslationKey`)
+  - package: `https://id.linked.cm/translation/pkg/translation` → `https://linked.cm/pkg/translation`
+  
+  Ontology terms (`https://linked.cm/ont/translation/`) and the XLIFF exchange namespace
+  (`https://id.linked.cm/translation/exchange/1`) are unchanged.
+  
+  No migration is shipped: stored shape descriptions and any data that references the old shape IRIs
+  are not rewritten. Hosts must re-sync shapes (and clear or re-materialize such data) after upgrading.
+
 ## 0.6.0
 
 ### Minor Changes
