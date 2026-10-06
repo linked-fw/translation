@@ -96,7 +96,9 @@ depending on Create Now.
 The package targets `@_linked/core` 2.14.4. Its ontology terms live at
 `https://linked.cm/ont/translation/` (prefix `translation:`), following the
 first-party rule `https://linked.cm/ont/{ontologySlug}/{localName}`. Shape IRIs
-are built from the package `baseUri`, `https://id.linked.cm/translation/`.
+follow `https://linked.cm/shape/translation/{ShapeName}` (e.g.
+`https://linked.cm/shape/translation/TranslationKey`) and the package IRI is
+`https://linked.cm/pkg/translation`.
 
 ## Open language configuration
 
