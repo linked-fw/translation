@@ -95,7 +95,10 @@ export async function createTranslationExchangeDocument(
       key: entry.key,
       namespace: entry.namespace,
       kind:
-        entry.ofShape || entry.ofProperty || entry.fromPackage
+        entry.ofShape ||
+        entry.ofProperty ||
+        entry.ofResource ||
+        entry.fromPackage
           ? 'semantic'
           : 'ui',
       sourceText: version.sourceText,

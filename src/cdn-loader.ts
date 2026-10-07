@@ -13,7 +13,7 @@ import {
  * Any source that yields a non-empty map wins; all-empty ⇒ `{}` and the client
  * keeps its inline English defaults. Never throws.
  *
- * Portable (no CN import): the caller wires `base`/`devApi` for its environment.
+ * Portable (no host-application import): the caller wires `base`/`devApi` for its environment.
  */
 import type { TranslationMessages } from './core/messages.js';
 import { sha256Hex } from './key-version.js';

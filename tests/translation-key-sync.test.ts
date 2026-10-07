@@ -38,6 +38,7 @@ describe('translation key sync', () => {
     ]);
     expect(report).toEqual({
       created: ['new'], updated: ['changed'], unchanged: ['same'],
+      preservedOverrides: [],
       orphaned: ['orphan'], conflicts: [{ key: 'conflict', defaults: ['One', 'Two'] }],
     });
     expect(target.upsert).toHaveBeenCalledTimes(2);
@@ -54,6 +55,62 @@ describe('translation key sync', () => {
 
     expect(report.created).toEqual(['home.title']);
     expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])(
+    'preserves declared app overrides in sync and dry run (%s)',
+    async (dryRun) => {
+      const upsert = vi.fn();
+      const report = await syncTranslationKeys(
+        {
+          list: async () => [
+            { key: 'help.weight', sourceText: 'App help', overridden: true },
+          ],
+          upsert,
+        },
+        'app',
+        [
+          {
+            key: 'help.weight',
+            sourceText: 'Package help',
+            file: 'help.ttl',
+            line: 1,
+          },
+        ],
+        { dryRun }
+      );
+      expect(report).toMatchObject({
+        created: [],
+        updated: [],
+        unchanged: ['help.weight'],
+        preservedOverrides: ['help.weight'],
+      });
+      expect(upsert).not.toHaveBeenCalled();
+    }
+  );
+
+  it('reports the writer preserving an override, not a change that never landed', async () => {
+    const report = await syncTranslationKeys(
+      {
+        list: async () => [{ key: 'help.weight', sourceText: 'Old help' }],
+        upsert: async () => ({ preservedOverride: true }),
+      },
+      'app',
+      [
+        {
+          key: 'help.weight',
+          sourceText: 'Package help',
+          file: 'help.ttl',
+          line: 1,
+        },
+      ]
+    );
+    expect(report).toMatchObject({
+      created: [],
+      updated: [],
+      unchanged: ['help.weight'],
+      preservedOverrides: ['help.weight'],
+    });
   });
 
   it('scans source files deterministically and ignores generated output', async () => {

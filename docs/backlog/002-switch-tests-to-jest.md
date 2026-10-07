@@ -7,8 +7,8 @@ summary: >
 
 # 002 — Consider switching the test suite from Vitest to Jest
 
-**Status:** open, low priority. Raised while extracting this package out of Create Now
-(CN plan 049). Nothing depends on it.
+**Status:** open, low priority. Raised while extracting this package out of the host
+application's workspace it was first built in. Nothing depends on it.
 
 ## What exists today
 
@@ -21,14 +21,14 @@ summary: >
 
 ## Why it might be worth changing
 
-Surveying every package in the Create Now workspace, the runner splits along the **repo
+Surveying every package in that workspace, the runner splits along the **repo
 boundary**, not along a unit/integration line:
 
 | Group | Runner |
 |---|---|
 | Packages that are their own git checkouts — `auth`, `core`, `cli`, `react`, `server`, `server-utils`, `s3`, `lincd`, `fuseki`, `access`, `documents`, `execution-gateway` | **Jest 29** + `ts-jest`, `jest.config.cjs` |
-| Create Now root app | **Vitest** + Playwright |
-| CN-owned package folders | mixed — `translation` and `maps` on Vitest, `access`/`documents`/`execution-gateway` on Jest, `primitives` on `node --test` |
+| The host application itself | **Vitest** + Playwright |
+| Package folders the host application owns | mixed — `translation` and `maps` on Vitest, `access`/`documents`/`execution-gateway` on Jest, `primitives` on `node --test` |
 
 **13 of the 18 packages that have tests use Jest.** This package is now its own checkout, which
 puts it in the group where Jest is the norm.
@@ -41,8 +41,8 @@ script. The `Build & Test` check has passed green on Vitest throughout, includin
 that brought this tree in. Nothing in the publish path inspects the runner.
 
 **The convention is weaker than the count suggests.** The Jest configs are a legacy inherited
-from the upstream LINCD repos, not a deliberate house choice. Create Now itself — the largest
-consumer of this package — is on Vitest, as is `@_linked/maps`. So "Jest everywhere" is not
+from the upstream LINCD repos, not a deliberate house choice. The largest consuming app of this
+package is on Vitest, as is `@_linked/maps`. So "Jest everywhere" is not
 actually true of the newer code.
 
 **There is a real cost.** The jsdom + React Testing Library setup, the ESM-native config, and the

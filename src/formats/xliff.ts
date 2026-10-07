@@ -14,7 +14,7 @@ const UTF8 = new TextEncoder();
  * Our own XML metadata namespace for exchange files. It is a file-format
  * identifier written into exported documents, not the translation ontology
  * (which lives at `https://linked.cm/ont/translation/`). Files exported before 0.3.0
- * used a Create Now URI and a `cn:` prefix; the reader below still accepts
+ * used the pre-0.3.0 namespace URI and prefix; the reader below still accepts
  * both, so those files keep importing.
  */
 const EXCHANGE_NAMESPACE = 'https://id.linked.cm/translation/exchange/1';

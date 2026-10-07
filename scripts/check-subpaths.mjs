@@ -4,15 +4,15 @@
  *
  * This package's exports map ends in a `./*` wildcard, which resolves any subpath a consumer
  * asks for — including ones with no emitted .js. TypeScript will not catch that, and neither
- * will the test suite, because both read src/ directly (and Create Now's dev server maps this
- * package to src/ itself).
+ * will the test suite, because both read src/ directly (and a consuming app's dev server may map
+ * this package to src/ itself).
  * A consumer installing from the registry resolves through `import` into lib/, and only then
  * does a missing module surface. That is the failure that shipped nine broken subpaths in
  * shape-ui.
  *
  * Two sources are checked:
  *   - the explicit keys of the exports map (minus the wildcards), and
- *   - scripts/consumer-subpaths.txt, the specifiers Create Now actually imports.
+ *   - scripts/consumer-subpaths.txt, the specifiers known consuming apps actually import.
  *
  * Run after a build: `npm run build` and `npm test` both end with it. It is in `test` because CI
  * builds with `linked build` directly, not the package's build script, and then runs `npm test`.

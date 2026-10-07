@@ -11,8 +11,8 @@ import {
 } from '@_linked/translation/archive';
 import { DEFAULT_TRANSLATION_JSON_ARCHIVE_LIMITS, sha256Hex } from '@_linked/translation';
 
-const SOURCE_APP = 'https://create.now/workspace/source/app/example';
-const TARGET_APP = 'https://create.now/workspace/target/app/example';
+const SOURCE_APP = 'https://example.org/workspace/source/app/example';
+const TARGET_APP = 'https://example.org/workspace/target/app/example';
 const SHAPE_IRI = 'https://linked.cm/pkg/profile/shape/Profile';
 const WEB_ID = 'https://webid.email/id/translator';
 const encoder = new TextEncoder();

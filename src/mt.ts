@@ -5,7 +5,7 @@
  * with a fallback chain: not every provider covers every language (DeepL has
  * no Swahili or Urdu), so the preferred provider is used where it supports
  * the target and the chain falls through otherwise. Pure module: no I/O, no
- * SDK imports — concrete providers live with the host (Create Now) and are
+ * SDK imports — concrete providers live with the host application and are
  * registered at boot.
  */
 import {

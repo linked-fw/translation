@@ -7,7 +7,7 @@ import type { TranslationDiscoverySource } from './discovery.js';
 /**
  * Code-canonical translations shipped beside one reusable LINKED shape.
  * Packages may expose this object from code or serialize the same contract as
- * JSON for Host Agent discovery without executing package code.
+ * JSON for a host's discovery tooling without executing package code.
  */
 export interface ShapeTranslationCatalog {
   schemaVersion: 1;
