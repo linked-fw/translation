@@ -173,7 +173,7 @@ export interface TranslationEntryRecord {
   ofProperty?: string;
   ofResource?: string;
   fromPackage?: string;
-  /** This app diverged a shape-owned key locally; shape propagation skips it (AD-N). */
+  /** Explicit app wording for a shape/property/resource/package declaration (AD-N). */
   overridden?: boolean;
   currentVersion?: TranslationKeyVersionRecord;
   versions?: TranslationKeyVersionRecord[];

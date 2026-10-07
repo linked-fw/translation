@@ -2,7 +2,11 @@ import type { TranslationLanguageDefinition } from './languages.js';
 import { runChecks, type CheckFinding } from './checks.js';
 import { compileLanguage } from './compile.js';
 import type { TranslationMessages } from './core/messages.js';
-import { classifyKeyVersion, sha256Hex } from './key-version.js';
+import {
+  classifyKeyVersion,
+  createArgumentSignature,
+  sha256Hex,
+} from './key-version.js';
 import {
   isConfirmedBuildDeclaration,
   type TranslationBuildDeclaration,
@@ -183,7 +187,9 @@ export async function translationContractSetHash(
 
 /**
  * Resolve keys extracted from one immutable build workspace to graph versions.
- * Any missing/orphaned/conflicting/default-drifted key fails before publication.
+ * Missing/orphaned/conflicting/default-drifted keys fail before publication.
+ * Explicit app-owned declaration overrides may change wording, never the
+ * exact workspace's declared format or runtime-argument contract.
  */
 export async function buildSnapshotContractSetHash(
   entries: TranslationEntryRecord[],
@@ -245,7 +251,29 @@ export async function buildSnapshotContractSetHash(
     }
     const extractedContract = [...distinct.values()][0];
     const decision = classifyKeyVersion(current, extractedContract);
-    if (decision.action !== 'unchanged') {
+    const explicitDeclarationOverride =
+      entry.overridden === true &&
+      !!(
+        entry.ofShape ||
+        entry.ofProperty ||
+        entry.ofResource ||
+        entry.fromPackage
+      );
+    // source-changed is reached only AFTER the existing classifier has checked
+    // identical format and argument signature. Do not infer the missing format
+    // of a legacy extraction from the very app override being verified.
+    const compatibleAppWording =
+      explicitDeclarationOverride &&
+      decision.reason === 'source-changed' &&
+      (declarationsByKey.get(entry.key) ?? []).every(
+        (item) =>
+          item.format !== undefined && item.namespace === entry.namespace
+      ) &&
+      entry.sourceText === current.sourceText &&
+      entry.format === current.format &&
+      createArgumentSignature(current.sourceText, current.format) ===
+        current.argumentSignature;
+    if (decision.action !== 'unchanged' && !compatibleAppWording) {
       throw new Error(
         `Build translation source for "${entry.key}" does not match its current key version (${decision.reason}).`
       );
