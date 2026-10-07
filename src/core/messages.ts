@@ -26,6 +26,25 @@ export type TranslationMessage = string | FormattedTranslationMessage;
 /** key → message template, for a single language. */
 export type TranslationMessages = Record<string, TranslationMessage>;
 
+/**
+ * Development pseudo-locale used by chrome coverage checks. Keeping this in
+ * the framework-light core means React and non-React clients exercise the
+ * exact same fallback path. The wrapper makes missed layout allowance visible;
+ * the accented glyphs make an untranslated English fallback unmistakable.
+ */
+export function pseudoLocalize(message: string): string {
+  const accents: Record<string, string> = {
+    A: 'Å', B: 'Ɓ', C: 'Ç', D: 'Ð', E: 'Ë', F: 'Ƒ', G: 'Ĝ', H: 'Ĥ', I: 'Ï',
+    J: 'Ĵ', K: 'Ķ', L: 'Ļ', M: 'Ṁ', N: 'Ñ', O: 'Ö', P: 'Ƥ', Q: 'Ǫ', R: 'Ŕ',
+    S: 'Š', T: 'Ŧ', U: 'Ü', V: 'Ṽ', W: 'Ŵ', X: 'Ẍ', Y: 'Ŷ', Z: 'Ž',
+    a: 'å', b: 'ƀ', c: 'ç', d: 'đ', e: 'ë', f: 'ƒ', g: 'ĝ', h: 'ĥ', i: 'ï',
+    j: 'ĵ', k: 'ķ', l: 'ļ', m: 'ṁ', n: 'ñ', o: 'ö', p: 'ƥ', q: 'ǫ', r: 'ŕ',
+    s: 'š', t: 'ŧ', u: 'ü', v: 'ṽ', w: 'ŵ', x: 'ẍ', y: 'ŷ', z: 'ž',
+  };
+  const accented = message.replace(/[A-Za-z]/g, (character) => accents[character]);
+  return `［${accented} ···］`;
+}
+
 /** FormatSimple: replace `{name}` placeholders with `params.name`. Unknown → left as-is. */
 export function interpolate(
   template: string,
@@ -93,9 +112,12 @@ export function translate(
       : stored?.message ?? defaultValue ?? key;
   const resolvedFormat =
     typeof stored === 'object' ? stored.format : format;
-  return resolvedFormat === 'icu'
+  const formatted = resolvedFormat === 'icu'
     ? formatIcu(template, params, locale)
     : interpolate(template, params);
+  return stored === undefined && locale.toLowerCase() === 'en-xa'
+    ? pseudoLocalize(formatted)
+    : formatted;
 }
 
 /** @deprecated Use directionFor; this historical set is not a support boundary. */

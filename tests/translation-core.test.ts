@@ -3,6 +3,7 @@ import {
   directionFor,
   formatIcu,
   interpolate,
+  pseudoLocalize,
   translate,
 } from '@_linked/translation/core/messages';
 
@@ -112,6 +113,30 @@ describe('translate (t)', () => {
     expect(translate(m, 'count', undefined, { n: 2 }, 'simple', 'en')).toBe(
       '2 missions',
     );
+  });
+  it('pseudo-localizes missing en-XA messages through the normal fallback path', () => {
+    const result = translate(
+      {},
+      'builder.save.saved',
+      'All changes saved',
+      undefined,
+      'simple',
+      'en-XA',
+    );
+    expect(result).toBe(pseudoLocalize('All changes saved'));
+    expect(result).not.toContain('All changes saved');
+  });
+  it('does not pseudo-localize an explicit en-XA catalog entry', () => {
+    expect(
+      translate(
+        {'builder.save.saved': 'catalog value'},
+        'builder.save.saved',
+        'fallback',
+        undefined,
+        'simple',
+        'en-XA',
+      ),
+    ).toBe('catalog value');
   });
 });
 
