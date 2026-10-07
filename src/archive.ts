@@ -26,8 +26,8 @@ export const TRANSLATION_ARCHIVE_MANIFEST_PATH =
   'linked.translation-archive.json';
 
 /**
- * Archives written before 0.3.0 named the manifest — and the archive format
- * itself — after Create Now. Both spellings are read; only the current one is
+ * Archives written before 0.3.0 used the pre-0.3.0 spelling for the manifest
+ * and the archive format. Both spellings are read; only the current one is
  * written. The format id is inside `archiveContentHash`'s input, so a legacy
  * manifest keeps the value it was hashed with.
  */
