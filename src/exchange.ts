@@ -363,7 +363,7 @@ export function normalizeParsedTranslationExchangeDocument(
   };
 }
 
-/** Validate the stronger, version-evidenced document required for CN exports. */
+/** Validate the stronger, version-evidenced document this package's own exports carry. */
 export function validateTranslationExchangeDocument(
   value: unknown,
 ): TranslationExchangeDocument {

@@ -1551,7 +1551,7 @@ export class TranslationProvider extends ShapeProvider {
 
   /**
    * Authoring gate. Reads `linkedAuth` off the request the LINKED server already
-   * populates, so this stays portable (no Create Now import, AD-G).
+   * populates, so this stays portable (no host-application import, AD-G).
    *
    * Every method except `getMessages` resolves the caller once, synchronously,
    * before its first `await`, and uses that value for both the permission check

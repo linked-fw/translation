@@ -12,7 +12,7 @@ export var loadData = () => {
  * Public ontology namespace for the translation package. First-party Linked
  * ontologies live at `https://linked.cm/ont/{ontologySlug}/{localName}`, where
  * the ontology slug — and the prefix label — is the package's public slug
- * (Create Now arch-02, "Public ontology namespace"). So terms are
+ * (the LINKED first-party ontology namespace rule). So terms are
  * `https://linked.cm/ont/translation/TranslationKey` and the prefix is
  * `translation:`. Before 0.5.0 this was `https://id.linked.cm/translation/vocab#`.
  */
@@ -79,7 +79,7 @@ export var publishedAt = ns('publishedAt');
 export var supportedUntil = ns('supportedUntil');
 export var qualitySummary = ns('qualitySummary');
 
-// ── CapabilityAppConfig properties (stored in Create Now's cn-main) ────
+// ── CapabilityAppConfig properties (stored in the host's app configuration) ────
 export var languages = ns('languages'); // active BCP-47 tags, including source
 export var defaultLanguage = ns('defaultLanguage'); // authored/source language
 export var cdnTarget = ns('cdnTarget'); // delivery base URL / bucket prefix — the "repoint" knob (AD-K, P2)

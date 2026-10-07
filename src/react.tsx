@@ -64,7 +64,7 @@ const EMPTY_MESSAGES: Record<string, TranslationMessages> = {};
  * React binding for the translation core (Plan 014 P1.5). Kept in a `/react`
  * subpath so non-React consumers use `./core/messages` without pulling React.
  * Message LOADING is caller-injected (`loadMessages`) so this stays transport-
- * agnostic: dev wires it to CN's API, prod to the bundled `{lang}.json` with a
+ * agnostic: dev wires it to the host's API, prod to the bundled `{lang}.json` with a
  * CDN overlay (AD-J/AD-K) — the provider doesn't care which.
  *
  * The hook shape mirrors Tolgee (`useTranslate().t(key, default, params)`,

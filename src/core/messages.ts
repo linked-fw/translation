@@ -89,7 +89,7 @@ function compiledIcu(template: string, locale: string): IntlMessageFormat {
 /**
  * Full ICU MessageFormat using the active locale's CLDR plural rules. Invalid
  * authoring data never crashes the host app: the unformatted template remains
- * visible and Translation Studio reports the syntax error for repair.
+ * visible and authoring tools can report the syntax error for repair.
  */
 export function formatIcu(
   template: string,

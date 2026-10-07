@@ -9,8 +9,8 @@ production, or private data.
 - `trados-inline-1.2.xlf` is a minimal interoperability fixture modeled on the
   XLIFF 1.2 inline-code structure commonly exchanged with Trados: `g` groups
   and standalone `x` codes with stable IDs.
-- `foreign-2.0.xlf` is specification-focused XLIFF 2.0 without any Create Now
-  extension metadata.
+- `foreign-2.0.xlf` is specification-focused XLIFF 2.0 without any
+  package-specific extension metadata.
 - `xxe-1.2.xlf` is a security fixture. Its external entity URL is deliberately
   non-routable and must never be resolved because the adapter rejects DTDs
   before parsing.
