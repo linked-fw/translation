@@ -4,7 +4,9 @@ import { StrictMode, Suspense } from 'react';
 import { hydrateRoot, type Root } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import {
+  TRANSLATION_PREVIEW_EVENT,
   TranslationProvider,
+  type TranslationPreviewDetail,
   useLanguage,
   useTranslate,
 } from '@_linked/translation/react';
@@ -165,26 +167,15 @@ describe('TranslationProvider / useTranslate', () => {
       </TranslationProvider>
     );
 
-    window.dispatchEvent(
-      new CustomEvent('create-now:preview-conditions', {
-        detail: {
-          conditions: [
-            {
-              adapterIri: 'https://create.now/shacl/PreviewLocaleAdapter',
-              value: 'ar',
-            },
-            {
-              adapterIri: 'https://create.now/shacl/PreviewPseudoLocaleAdapter',
-              value: 'expanded',
-            },
-            {
-              adapterIri: 'https://create.now/shacl/PreviewDirectionAdapter',
-              value: 'ltr',
-            },
-          ],
-        },
-      })
-    );
+    const preview = (detail: TranslationPreviewDetail) =>
+      act(() => {
+        window.dispatchEvent(
+          new CustomEvent(TRANSLATION_PREVIEW_EVENT, { detail })
+        );
+      });
+    expect(TRANSLATION_PREVIEW_EVENT).toBe('linked:translation-preview');
+
+    preview({ language: 'ar', pseudoLocale: 'expanded', direction: 'ltr' });
 
     await waitFor(() =>
       expect(screen.getByTestId('msg').textContent).toMatch(
@@ -194,6 +185,16 @@ describe('TranslationProvider / useTranslate', () => {
     expect(screen.getByTestId('lang').textContent).toBe('ar');
     expect(screen.getByTestId('dir').textContent).toBe('ltr');
     expect(document.documentElement.dir).toBe('ltr');
+    expect(window.localStorage.getItem(storageKey)).toBeNull();
+
+    // Each event replaces the whole preview; an empty detail ends it.
+    preview({});
+    await waitFor(() =>
+      expect(screen.getByTestId('msg').textContent).toBe('Hello, Ana')
+    );
+    expect(screen.getByTestId('lang').textContent).toBe('en');
+    expect(screen.getByTestId('dir').textContent).toBe('ltr');
+    expect(document.documentElement.lang).toBe('en');
     expect(window.localStorage.getItem(storageKey)).toBeNull();
   });
 });

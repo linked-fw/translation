@@ -21,35 +21,44 @@ import {
   type TranslationMessages,
 } from './core/messages.js';
 
-const PREVIEW_CONDITIONS_EVENT = 'create-now:preview-conditions';
-const PREVIEW_LOCALE_ADAPTER = 'https://create.now/shacl/PreviewLocaleAdapter';
-const PREVIEW_DIRECTION_ADAPTER =
-  'https://create.now/shacl/PreviewDirectionAdapter';
-const PREVIEW_PSEUDO_LOCALE_ADAPTER =
-  'https://create.now/shacl/PreviewPseudoLocaleAdapter';
-const EMPTY_MESSAGES: Record<string, TranslationMessages> = {};
-
-type PreviewPseudoLocale = 'off' | 'accented' | 'expanded';
-type PreviewDirection = 'auto' | 'ltr' | 'rtl';
-
-interface PreviewRuntimeCondition {
-  readonly adapterIri?: unknown;
-  readonly value?: unknown;
-}
-
 /**
- * Read one adapter's value from a `create-now:preview-conditions` event. The
- * event's `detail.conditions` is a list of `{adapterIri, value}`; anything
- * malformed reads as "no condition".
+ * Window event that previews a language, text direction or pseudo-locale in
+ * every mounted `TranslationProvider`, without changing the user's language.
+ *
+ * Dispatch it with a {@link TranslationPreviewDetail}:
+ *
+ * ```ts
+ * window.dispatchEvent(
+ *   new CustomEvent(TRANSLATION_PREVIEW_EVENT, {
+ *     detail: { language: 'ar', direction: 'ltr', pseudoLocale: 'expanded' },
+ *   })
+ * );
+ * ```
+ *
+ * Each event replaces the whole preview: a field that is missing or invalid
+ * falls back to its default (no preview language, `'auto'`, `'off'`), so an
+ * empty detail ends the preview. The preview language is never written to
+ * storage, and a preview direction wins over the language's own direction.
  */
-function previewConditionValue(event: Event, adapterIri: string): unknown {
-  const conditions = (event as CustomEvent<{ conditions?: unknown }>).detail
-    ?.conditions;
-  if (!Array.isArray(conditions)) return undefined;
-  return (conditions as PreviewRuntimeCondition[]).find(
-    (condition) => condition?.adapterIri === adapterIri
-  )?.value;
+export const TRANSLATION_PREVIEW_EVENT = 'linked:translation-preview';
+
+export type TranslationPreviewDirection = 'auto' | 'ltr' | 'rtl';
+export type TranslationPreviewPseudoLocale = 'off' | 'accented' | 'expanded';
+
+/** The `detail` of a {@link TRANSLATION_PREVIEW_EVENT}. */
+export interface TranslationPreviewDetail {
+  /** BCP-47 tag to render in instead of the selected language. */
+  language?: string;
+  /** Force a text direction; `'auto'` uses the language's own. */
+  direction?: TranslationPreviewDirection;
+  /**
+   * `'accented'` accents every message; `'expanded'` pads every message by
+   * about a third to show controls that only fit their English copy.
+   */
+  pseudoLocale?: TranslationPreviewPseudoLocale;
 }
+
+const EMPTY_MESSAGES: Record<string, TranslationMessages> = {};
 
 /**
  * React binding for the translation core (Plan 014 P1.5). Kept in a `/react`
@@ -137,9 +146,9 @@ export function TranslationProvider({
   });
   const [previewLanguage, setPreviewLanguage] = useState<string | null>(null);
   const [previewPseudoLocale, setPreviewPseudoLocale] =
-    useState<PreviewPseudoLocale>('off');
+    useState<TranslationPreviewPseudoLocale>('off');
   const [previewDirection, setPreviewDirection] =
-    useState<PreviewDirection>('auto');
+    useState<TranslationPreviewDirection>('auto');
   const effectiveLanguage = previewLanguage ?? language;
   // A preview direction is an editor coordinate and wins; otherwise the
   // configured language's own direction, then the tag's script default.
@@ -222,16 +231,12 @@ export function TranslationProvider({
   // the app user's real language preference.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const onPreviewConditions = (event: Event) => {
-      const nextLanguage = previewConditionValue(event, PREVIEW_LOCALE_ADAPTER);
-      const nextPseudoLocale = previewConditionValue(
-        event,
-        PREVIEW_PSEUDO_LOCALE_ADAPTER
-      );
-      const nextDirection = previewConditionValue(
-        event,
-        PREVIEW_DIRECTION_ADAPTER
-      );
+    const onPreview = (event: Event) => {
+      const detail = (event as CustomEvent<TranslationPreviewDetail | null>)
+        .detail;
+      const nextLanguage: unknown = detail?.language;
+      const nextPseudoLocale: unknown = detail?.pseudoLocale;
+      const nextDirection: unknown = detail?.direction;
       setPreviewLanguage(
         typeof nextLanguage === 'string' && nextLanguage ? nextLanguage : null
       );
@@ -246,9 +251,9 @@ export function TranslationProvider({
           : 'auto'
       );
     };
-    window.addEventListener(PREVIEW_CONDITIONS_EVENT, onPreviewConditions);
+    window.addEventListener(TRANSLATION_PREVIEW_EVENT, onPreview);
     return () =>
-      window.removeEventListener(PREVIEW_CONDITIONS_EVENT, onPreviewConditions);
+      window.removeEventListener(TRANSLATION_PREVIEW_EVENT, onPreview);
   }, []);
 
   // Reflect the effective language and text direction on <html>.

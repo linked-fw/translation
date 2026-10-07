@@ -2,12 +2,12 @@
 '@_linked/translation': minor
 ---
 
-Brings in the translation work done for Create Now's builder.
+Adds pseudo-locales, a live translation preview, keys owned by any declared resource, and kept app overrides of declared keys.
 
 **Pseudo-locales and preview conditions**
 
 - `pseudoLocalize` and `pseudoExpand` are exported from `core/messages`. With the locale `en-XA`, `translate()` pseudo-localizes any message that has no catalog entry, so an untranslated English fallback is easy to spot. An explicit `en-XA` catalog entry is used as written.
-- The React `TranslationProvider` listens for a `create-now:preview-conditions` window event. The event can set a preview language, force the text direction (`ltr` or `rtl`), and turn on an `accented` or `expanded` pseudo-locale. The preview language is used for loading, formatting, `useLanguage().language` and `<html lang>`. It is never saved as the user's language.
+- The React `TranslationProvider` listens for the `TRANSLATION_PREVIEW_EVENT` window event (`'linked:translation-preview'`), exported from `/react` with its `TranslationPreviewDetail` type. Its detail is `{ language?, direction?, pseudoLocale? }`: a preview language, a forced text direction (`'auto'`, `'ltr'` or `'rtl'`), and a pseudo-locale (`'off'`, `'accented'` or `'expanded'`). Each event replaces the whole preview, so an empty detail ends it. The preview language is used for loading, formatting, `useLanguage().language` and `<html lang>`, and it is never saved as the user's language. A preview direction wins over the language's own direction.
 
 **Keys owned by any declared resource**
 
