@@ -95,10 +95,11 @@ export class TranslationKey extends Shape {
   }
 
   /**
-   * True when this app copy of a shape-owned key has been edited locally and
-   * should NOT be overwritten by shape-route propagation (AD-N: "never
+   * True when this app copy of a declaration-owned key has been edited locally
+   * (shape, property or named package resource, including help) and should NOT
+   * be overwritten by declaration refresh or shape-route propagation (AD-N: "never
    * overwrites an app's own override"). Set when the per-app editor changes the
-   * source of a key that carries `ofShape`.
+   * source of a key with declared ownership.
    */
   @literalProperty({ path: tr.overridden, maxCount: 1 })
   get overridden(): boolean {
@@ -106,9 +107,10 @@ export class TranslationKey extends Shape {
   }
 
   /**
-   * The shape's canonical source captured the moment this app first overrode the
+   * The declaration's canonical source captured when this app first overrode the
    * key — what "clear override" reverts to when no non-overridden sibling copy is
-   * available to read the current canonical from (AD-N).
+   * available to read the current canonical from (AD-N). The historic predicate
+   * name stays compatible; resource-owned help does not invent a second carrier.
    */
   @literalProperty({ path: tr.shapeSource, maxCount: 1 })
   get shapeSource(): string {

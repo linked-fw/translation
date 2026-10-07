@@ -12,7 +12,18 @@ export interface ExtractedTranslationKey {
 }
 
 export interface TranslationKeySyncTarget {
-  list(data: { appId: string }): Promise<Array<{ key: string; sourceText?: string }>>;
+  /**
+   * Existing keys. `overridden: true` marks a declared key the app has reworded
+   * locally; sync reports it in `preservedOverrides` and never writes it.
+   */
+  list(data: { appId: string }): Promise<
+    Array<{ key: string; sourceText?: string; overridden?: boolean }>
+  >;
+  /**
+   * Write one key. A writer that keeps an app override instead of applying the
+   * declared source answers `{ preservedOverride: true }` (see
+   * `upsertTranslationKey` with `source: 'declaration-sync'`).
+   */
   upsert(data: {
     appId: string;
     key: string;
@@ -25,6 +36,8 @@ export interface TranslationKeySyncReport {
   created: string[];
   updated: string[];
   unchanged: string[];
+  /** Keys whose app override was kept over the declared source; also in `unchanged`. */
+  preservedOverrides: string[];
   orphaned: string[];
   conflicts: Array<{ key: string; defaults: string[] }>;
 }
@@ -141,7 +154,12 @@ export async function syncTranslationKeys(
     defaultsByKey.set(item.key, defaults);
   }
   const report: TranslationKeySyncReport = {
-    created: [], updated: [], unchanged: [], orphaned: [], conflicts: [],
+    created: [],
+    updated: [],
+    unchanged: [],
+    preservedOverrides: [],
+    orphaned: [],
+    conflicts: [],
   };
   for (const [key, defaults] of defaultsByKey) {
     if (defaults.size > 1) {
@@ -150,15 +168,37 @@ export async function syncTranslationKeys(
     }
     const sourceText = [...defaults][0];
     const current = existingByKey.get(key);
-    if (!current) report.created.push(key);
-    else if (current.sourceText !== sourceText) report.updated.push(key);
-    else {
+    if (current?.overridden === true) {
+      report.preservedOverrides.push(key);
+      report.unchanged.push(key);
+      continue;
+    }
+    if (current?.sourceText === sourceText) {
       report.unchanged.push(key);
       continue;
     }
     if (!options.dryRun) {
-      await target.upsert({ appId, key, sourceText, kind: 'ui' });
+      const result = await target.upsert({
+        appId,
+        key,
+        sourceText,
+        kind: 'ui',
+      });
+      // The writer is authoritative: an override may have appeared since list,
+      // or the portable target may not project ownership in its list response.
+      if (
+        result &&
+        typeof result === 'object' &&
+        'preservedOverride' in result &&
+        result.preservedOverride === true
+      ) {
+        report.preservedOverrides.push(key);
+        report.unchanged.push(key);
+        continue;
+      }
     }
+    if (current) report.updated.push(key);
+    else report.created.push(key);
   }
   report.orphaned = existing
     .map((item) => item.key)
