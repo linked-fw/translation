@@ -45,6 +45,17 @@ export function pseudoLocalize(message: string): string {
   return `［${accented} ···］`;
 }
 
+/**
+ * Layout-stress pseudo mode. Unlike en-XA's accented fallback, this deliberately
+ * expands the resolved message—including a real translated catalog value—so a
+ * preview can expose controls that only fit their English copy.
+ */
+export function pseudoExpand(message: string): string {
+  const visibleLength = [...message].length;
+  const padding = '·'.repeat(Math.max(3, Math.ceil(visibleLength * 0.35)));
+  return `［${message} ${padding}］`;
+}
+
 /** FormatSimple: replace `{name}` placeholders with `params.name`. Unknown → left as-is. */
 export function interpolate(
   template: string,

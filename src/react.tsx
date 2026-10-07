@@ -13,9 +13,40 @@ import React, {
 import {
   directionFor,
   type MessageFormat,
+  pseudoExpand,
+  pseudoLocalize,
   translate,
   type TranslationMessages,
 } from './core/messages.js';
+
+const PREVIEW_CONDITIONS_EVENT = 'create-now:preview-conditions';
+const PREVIEW_LOCALE_ADAPTER = 'https://create.now/shacl/PreviewLocaleAdapter';
+const PREVIEW_DIRECTION_ADAPTER =
+  'https://create.now/shacl/PreviewDirectionAdapter';
+const PREVIEW_PSEUDO_LOCALE_ADAPTER =
+  'https://create.now/shacl/PreviewPseudoLocaleAdapter';
+
+type PreviewPseudoLocale = 'off' | 'accented' | 'expanded';
+type PreviewDirection = 'auto' | 'ltr' | 'rtl';
+
+interface PreviewRuntimeCondition {
+  readonly adapterIri?: unknown;
+  readonly value?: unknown;
+}
+
+/**
+ * Read one adapter's value from a `create-now:preview-conditions` event. The
+ * event's `detail.conditions` is a list of `{adapterIri, value}`; anything
+ * malformed reads as "no condition".
+ */
+function previewConditionValue(event: Event, adapterIri: string): unknown {
+  const conditions = (event as CustomEvent<{ conditions?: unknown }>).detail
+    ?.conditions;
+  if (!Array.isArray(conditions)) return undefined;
+  return (conditions as PreviewRuntimeCondition[]).find(
+    (condition) => condition?.adapterIri === adapterIri
+  )?.value;
+}
 
 /**
  * React binding for the translation core (Plan 014 P1.5). Kept in a `/react`
@@ -97,9 +128,19 @@ export function TranslationProvider({
     }
     return defaultLanguage;
   });
+  const [previewLanguage, setPreviewLanguage] = useState<string | null>(null);
+  const [previewPseudoLocale, setPreviewPseudoLocale] =
+    useState<PreviewPseudoLocale>('off');
+  const [previewDirection, setPreviewDirection] =
+    useState<PreviewDirection>('auto');
+  const effectiveLanguage = previewLanguage ?? language;
+  // A preview direction is an editor coordinate and wins; otherwise the
+  // configured language's own direction, then the tag's script default.
   const dir =
-    languages.find((item) => item.tag === language)?.direction ??
-    directionFor(language);
+    previewDirection === 'ltr' || previewDirection === 'rtl'
+      ? previewDirection
+      : (languages.find((item) => item.tag === effectiveLanguage)?.direction ??
+        directionFor(effectiveLanguage));
   useEffect(() => {
     if (!loadLanguages) return;
     let cancelled = false;
@@ -133,10 +174,10 @@ export function TranslationProvider({
   // Load the active language's messages once. English renders from inline
   // defaults until (and if) a payload arrives, so the app is never blank.
   useEffect(() => {
-    if (messagesByLang[language]) return;
+    if (messagesByLang[effectiveLanguage]) return;
     let cancelled = false;
     const chain = languageFallbacks(
-      language,
+      effectiveLanguage,
       defaultLanguage,
       remoteLanguages
     ).reverse();
@@ -144,7 +185,10 @@ export function TranslationProvider({
       .then((maps) => Object.assign({}, ...maps) as TranslationMessages)
       .then((msgs) => {
         if (!cancelled) {
-          setMessagesByLang((prev) => ({ ...prev, [language]: msgs }));
+          setMessagesByLang((prev) => ({
+            ...prev,
+            [effectiveLanguage]: msgs,
+          }));
         }
       })
       .catch(() => {
@@ -154,20 +198,54 @@ export function TranslationProvider({
       cancelled = true;
     };
   }, [
-    language,
+    effectiveLanguage,
     loadMessages,
     messagesByLang,
     defaultLanguage,
     remoteLanguages,
   ]);
 
-  // Reflect the configured language and text direction on <html>.
+  // Preview locale is an ephemeral editor coordinate. It intentionally does
+  // not call setLanguage(), because doing so would persist a test condition as
+  // the app user's real language preference.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPreviewConditions = (event: Event) => {
+      const nextLanguage = previewConditionValue(event, PREVIEW_LOCALE_ADAPTER);
+      const nextPseudoLocale = previewConditionValue(
+        event,
+        PREVIEW_PSEUDO_LOCALE_ADAPTER
+      );
+      const nextDirection = previewConditionValue(
+        event,
+        PREVIEW_DIRECTION_ADAPTER
+      );
+      setPreviewLanguage(
+        typeof nextLanguage === 'string' && nextLanguage ? nextLanguage : null
+      );
+      setPreviewPseudoLocale(
+        nextPseudoLocale === 'accented' || nextPseudoLocale === 'expanded'
+          ? nextPseudoLocale
+          : 'off'
+      );
+      setPreviewDirection(
+        nextDirection === 'ltr' || nextDirection === 'rtl'
+          ? nextDirection
+          : 'auto'
+      );
+    };
+    window.addEventListener(PREVIEW_CONDITIONS_EVENT, onPreviewConditions);
+    return () =>
+      window.removeEventListener(PREVIEW_CONDITIONS_EVENT, onPreviewConditions);
+  }, []);
+
+  // Reflect the effective language and text direction on <html>.
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.documentElement.dir = dir;
-      document.documentElement.lang = language;
+      document.documentElement.lang = effectiveLanguage;
     }
-  }, [language, dir]);
+  }, [effectiveLanguage, dir]);
 
   const setLanguage = useCallback(
     (tag: string) => {
@@ -185,21 +263,30 @@ export function TranslationProvider({
       defaultValue?: string,
       params?: Record<string, unknown>,
       options?: TranslationCallOptions
-    ) =>
-      translate(
-        messagesByLang[language] ?? {},
+    ) => {
+      const translated = translate(
+        messagesByLang[effectiveLanguage] ?? {},
         key,
         defaultValue,
         params,
         options?.format ?? format,
-        language
-      ),
-    [messagesByLang, language, format]
+        effectiveLanguage
+      );
+      if (previewPseudoLocale === 'accented') {
+        return effectiveLanguage.toLowerCase() === 'en-xa'
+          ? translated
+          : pseudoLocalize(translated);
+      }
+      return previewPseudoLocale === 'expanded'
+        ? pseudoExpand(translated)
+        : translated;
+    },
+    [messagesByLang, effectiveLanguage, format, previewPseudoLocale]
   );
 
   const value = useMemo<TranslationContextValue>(
-    () => ({ t, language, setLanguage, languages, dir }),
-    [t, language, setLanguage, languages, dir]
+    () => ({ t, language: effectiveLanguage, setLanguage, languages, dir }),
+    [t, effectiveLanguage, setLanguage, languages, dir]
   );
 
   return (

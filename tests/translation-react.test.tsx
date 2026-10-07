@@ -91,4 +91,55 @@ describe('TranslationProvider / useTranslate', () => {
     );
     await waitFor(() => expect(document.documentElement.dir).toBe('rtl'));
   });
+
+  it('observes preview locale and pseudo conditions without persisting a preference', async () => {
+    const storageKey = 'preview-language-test';
+    window.localStorage.removeItem(storageKey);
+    render(
+      <TranslationProvider
+        languages={[
+          { tag: 'en', label: 'English' },
+          { tag: 'ar', label: 'العربية' },
+        ]}
+        defaultLanguage="en"
+        loadMessages={async (language) =>
+          language === 'ar' ? { hello: 'مرحبا، {name}' } : {}
+        }
+        storageKey={storageKey}
+      >
+        <Demo />
+      </TranslationProvider>
+    );
+
+    window.dispatchEvent(
+      new CustomEvent('create-now:preview-conditions', {
+        detail: {
+          conditions: [
+            {
+              adapterIri: 'https://create.now/shacl/PreviewLocaleAdapter',
+              value: 'ar',
+            },
+            {
+              adapterIri: 'https://create.now/shacl/PreviewPseudoLocaleAdapter',
+              value: 'expanded',
+            },
+            {
+              adapterIri: 'https://create.now/shacl/PreviewDirectionAdapter',
+              value: 'ltr',
+            },
+          ],
+        },
+      })
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('msg').textContent).toMatch(
+        /^［مرحبا، Ana ·+］$/
+      )
+    );
+    expect(screen.getByTestId('lang').textContent).toBe('ar');
+    expect(screen.getByTestId('dir').textContent).toBe('ltr');
+    expect(document.documentElement.dir).toBe('ltr');
+    expect(window.localStorage.getItem(storageKey)).toBeNull();
+  });
 });

@@ -3,6 +3,7 @@ import {
   directionFor,
   formatIcu,
   interpolate,
+  pseudoExpand,
   pseudoLocalize,
   translate,
 } from '@_linked/translation/core/messages';
@@ -137,6 +138,15 @@ describe('translate (t)', () => {
         'en-XA',
       ),
     ).toBe('catalog value');
+  });
+});
+
+describe('pseudoExpand', () => {
+  it('wraps and pads a resolved message by about a third of its length', () => {
+    expect(pseudoExpand('Save')).toBe('［Save ···］');
+    expect(pseudoExpand('Reset the whole layout')).toBe(
+      `［Reset the whole layout ${'·'.repeat(8)}］`,
+    );
   });
 });
 
