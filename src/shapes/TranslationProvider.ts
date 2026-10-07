@@ -1187,7 +1187,14 @@ export async function upsertTranslationKey(
           })
         : currentVersion;
     values.currentVersion = { id: nextVersion.id };
-    await TranslationKey.update(values).for({ id } as any);
+    // In the Linked mutation DSL an explicitly present `undefined` removes
+    // that predicate. A partial source edit has not requested removal of the
+    // declaration owner, help description, or existing override flag. Omit
+    // untouched fields; an explicit false (reset) remains a real write.
+    const patch = Object.fromEntries(
+      Object.entries(values).filter(([, value]) => value !== undefined)
+    );
+    await TranslationKey.update(patch as any).for({ id } as any);
     if (decision.action === 'create-version') {
       await TranslationUnit.update({ state: 'stale' } as any).where((u) =>
         u.ofKey.equals({ id } as any),

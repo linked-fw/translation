@@ -77,6 +77,18 @@ describe('translation version dual-write', () => {
       })
     );
     expect(calls.version).toHaveBeenCalledOnce();
+    const patch = calls.update.mock.calls[0]![0];
+    for (const field of [
+      'description',
+      'ofNode',
+      'ofField',
+      'ofShape',
+      'ofProperty',
+      'ofResource',
+      'fromPackage',
+    ])
+      expect(patch).not.toHaveProperty(field);
+    expect(Object.values(patch)).not.toContain(undefined);
   });
 
   it('declaration refresh updates unmodified package help without misclassifying it as a local edit', async () => {
@@ -88,9 +100,9 @@ describe('translation version dual-write', () => {
     expect(calls.update).toHaveBeenCalledWith(
       expect.objectContaining({
         sourceText: 'Updated package help',
-        overridden: undefined,
       })
     );
+    expect(calls.update.mock.calls[0]![0]).not.toHaveProperty('overridden');
     expect(calls.update.mock.calls[0]![0]).not.toHaveProperty('shapeSource');
   });
 
