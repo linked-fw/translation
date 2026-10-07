@@ -44,6 +44,7 @@ export interface TranslationKeyInput {
   ofField?: string;
   ofShape?: string;
   ofProperty?: string;
+  ofResource?: string;
   fromPackage?: string;
   /** Force the override flag; when omitted it is derived (see upsertTranslationKey). */
   overridden?: boolean;
@@ -313,6 +314,7 @@ export function groupTranslationEntries(
       format: row.format === 'icu' ? 'icu' : 'simple',
       ofShape: iri(row.ofShape),
       ofProperty: iri(row.ofProperty),
+      ofResource: iri(row.ofResource),
       fromPackage: row.fromPackage || undefined,
       overridden:
         (row as any).overridden === true || (row as any).overridden === 'true'
@@ -397,6 +399,7 @@ export async function listTranslationKeys(data: { appId: string }) {
     k.ofField,
     k.ofShape,
     k.ofProperty,
+    k.ofResource,
     k.fromPackage,
     k.overridden,
     k.format,
@@ -423,6 +426,7 @@ export async function listTranslationEntries(data: {
       k.format,
       k.ofShape,
       k.ofProperty,
+      k.ofResource,
       k.fromPackage,
       k.overridden,
       k.currentVersion,
@@ -1078,6 +1082,7 @@ export async function upsertTranslationKey(
     ofField: data.ofField,
     ofShape: data.ofShape ? { id: data.ofShape } : undefined,
     ofProperty: data.ofProperty ? { id: data.ofProperty } : undefined,
+    ofResource: data.ofResource ? { id: data.ofResource } : undefined,
     fromPackage: data.fromPackage,
     overridden: data.overridden === true ? true : undefined,
     format: data.format ?? 'simple',

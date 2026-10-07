@@ -2,6 +2,30 @@ import { describe, expect, it } from 'vitest';
 import { groupTranslationEntries } from '../src/shapes/TranslationProvider.js';
 
 describe('groupTranslationEntries', () => {
+  it('keeps an arbitrary declared resource distinct from shape/property provenance', () => {
+    const [entry] = groupTranslationEntries([
+      {
+        key: 'builder.actions.resetLayout',
+        namespace: 'builder.actions',
+        sourceText: 'Reset layout',
+        kind: 'ui',
+        format: 'simple',
+        ofResource: {
+          id: 'https://example.org/action/builder/reset-layout',
+        },
+        fromPackage: 'example-package',
+      },
+    ] as any);
+
+    expect(entry).toMatchObject({
+      key: 'builder.actions.resetLayout',
+      ofResource: 'https://example.org/action/builder/reset-layout',
+      fromPackage: 'example-package',
+    });
+    expect(entry.ofShape).toBeUndefined();
+    expect(entry.ofProperty).toBeUndefined();
+  });
+
   it('groups app-scoped query rows into deterministic plain records', () => {
     const result = groupTranslationEntries(
       [

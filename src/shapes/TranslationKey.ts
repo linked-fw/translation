@@ -82,6 +82,12 @@ export class TranslationKey extends Shape {
     return '';
   }
 
+  /** Arbitrary declared semantic resource, such as an action or condition. */
+  @objectProperty({ path: tr.ofResource, maxCount: 1 })
+  get ofResource(): string {
+    return '';
+  }
+
   /** Reusable package that supplied the seed value. */
   @literalProperty({ path: tr.fromPackage, maxCount: 1 })
   get fromPackage(): string {
@@ -151,6 +157,7 @@ export class TranslationKey extends Shape {
     ofField?: string;
     ofShape?: string;
     ofProperty?: string;
+    ofResource?: string;
     fromPackage?: string;
     format?: 'simple' | 'icu';
   }): Promise<{ id: string }> {

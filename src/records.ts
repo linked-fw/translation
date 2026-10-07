@@ -171,6 +171,7 @@ export interface TranslationEntryRecord {
   /** Optional semantic organization for translations supplied with LINKED shapes. */
   ofShape?: string;
   ofProperty?: string;
+  ofResource?: string;
   fromPackage?: string;
   /** This app diverged a shape-owned key locally; shape propagation skips it (AD-N). */
   overridden?: boolean;

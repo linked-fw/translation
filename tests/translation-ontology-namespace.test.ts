@@ -8,6 +8,8 @@ import { describe, expect, it } from 'vitest';
 import {
   _self,
   cdnTarget,
+  ofResource,
+  tr,
   TranslationKey,
   TranslationUnit,
 } from '../src/ontologies/translation.js';
@@ -21,6 +23,11 @@ describe('translation ontology namespace', () => {
     expect(TranslationKey.id).toBe(`${NAMESPACE}TranslationKey`);
     expect(TranslationUnit.id).toBe(`${NAMESPACE}TranslationUnit`);
     expect(cdnTarget.id).toBe(`${NAMESPACE}cdnTarget`);
+  });
+
+  it('declares ofResource for keys owned by an arbitrary semantic resource', () => {
+    expect(ofResource.id).toBe(`${NAMESPACE}ofResource`);
+    expect(tr.ofResource).toBe(ofResource);
   });
 
   it('uses the package slug as the JSON-LD prefix label', () => {

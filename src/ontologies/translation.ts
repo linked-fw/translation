@@ -51,6 +51,7 @@ export var ofNode = ns('ofNode'); // content-translation subject (kind:'content'
 export var ofField = ns('ofField');
 export var ofShape = ns('ofShape'); // semantic SHACL shape context for package keys
 export var ofProperty = ns('ofProperty'); // semantic predicate context for package keys
+export var ofResource = ns('ofResource'); // arbitrary semantic resource (action, group, condition, port)
 export var fromPackage = ns('fromPackage'); // package that supplied a seed catalog
 export var overridden = ns('overridden'); // app diverged this shape key from canonical → excluded from shape propagation (AD-N)
 export var shapeSource = ns('shapeSource'); // canonical source snapshot at override time → the value "clear override" reverts to (AD-N)
@@ -167,6 +168,7 @@ export const tr = {
   ofField,
   ofShape,
   ofProperty,
+  ofResource,
   fromPackage,
   overridden,
   shapeSource,
