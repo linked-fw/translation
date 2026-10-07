@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { toRevisionRecords } from '../src/shapes/TranslationProvider.js';
 
-const APP = 'https://create.now/data/workspace/w/app/a';
+const APP = 'https://example.org/data/workspace/w/app/a';
 const REV = (n: string) => `${APP}/translation/key/nav.home/unit/es/rev/${n}`;
 
 describe('toRevisionRecords', () => {
