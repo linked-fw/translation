@@ -4,11 +4,13 @@ import {
 } from './languages.js';
 import React, {
   createContext,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
 } from 'react';
 import {
   directionFor,
@@ -25,6 +27,7 @@ const PREVIEW_DIRECTION_ADAPTER =
   'https://create.now/shacl/PreviewDirectionAdapter';
 const PREVIEW_PSEUDO_LOCALE_ADAPTER =
   'https://create.now/shacl/PreviewPseudoLocaleAdapter';
+const EMPTY_MESSAGES: Record<string, TranslationMessages> = {};
 
 type PreviewPseudoLocale = 'off' | 'accented' | 'expanded';
 type PreviewDirection = 'auto' | 'ltr' | 'rtl';
@@ -71,13 +74,17 @@ export interface TranslationCallOptions {
   format?: MessageFormat;
 }
 
+type TranslateFn = (
+  key: string,
+  defaultValue?: string,
+  params?: Record<string, unknown>,
+  options?: TranslationCallOptions
+) => string;
+
 interface TranslationContextValue {
-  t: (
-    key: string,
-    defaultValue?: string,
-    params?: Record<string, unknown>,
-    options?: TranslationCallOptions
-  ) => string;
+  t: TranslateFn;
+  /** `t` over no catalog: exactly what the server rendered. */
+  tInline: TranslateFn;
   language: string;
   setLanguage: (tag: string) => void;
   languages: TranslationLanguage[];
@@ -185,10 +192,15 @@ export function TranslationProvider({
       .then((maps) => Object.assign({}, ...maps) as TranslationMessages)
       .then((msgs) => {
         if (!cancelled) {
-          setMessagesByLang((prev) => ({
-            ...prev,
-            [effectiveLanguage]: msgs,
-          }));
+          // A descendant lazy route may still be hydrating when the catalog
+          // arrives. Overlay messages without replacing its server-rendered
+          // DOM; inline defaults remain usable until the transition commits.
+          startTransition(() => {
+            setMessagesByLang((prev) => ({
+              ...prev,
+              [effectiveLanguage]: msgs,
+            }));
+          });
         }
       })
       .catch(() => {
@@ -257,36 +269,44 @@ export function TranslationProvider({
     [storageKey]
   );
 
-  const t = useCallback(
-    (
-      key: string,
-      defaultValue?: string,
-      params?: Record<string, unknown>,
-      options?: TranslationCallOptions
-    ) => {
-      const translated = translate(
-        messagesByLang[effectiveLanguage] ?? {},
-        key,
-        defaultValue,
-        params,
-        options?.format ?? format,
-        effectiveLanguage
-      );
-      if (previewPseudoLocale === 'accented') {
-        return effectiveLanguage.toLowerCase() === 'en-xa'
-          ? translated
-          : pseudoLocalize(translated);
-      }
-      return previewPseudoLocale === 'expanded'
-        ? pseudoExpand(translated)
-        : translated;
-    },
-    [messagesByLang, effectiveLanguage, format, previewPseudoLocale]
+  const translatorFor = useCallback(
+    (catalogs: Record<string, TranslationMessages>): TranslateFn =>
+      (key, defaultValue, params, options) => {
+        const translated = translate(
+          catalogs[effectiveLanguage] ?? {},
+          key,
+          defaultValue,
+          params,
+          options?.format ?? format,
+          effectiveLanguage
+        );
+        if (previewPseudoLocale === 'accented') {
+          return effectiveLanguage.toLowerCase() === 'en-xa'
+            ? translated
+            : pseudoLocalize(translated);
+        }
+        return previewPseudoLocale === 'expanded'
+          ? pseudoExpand(translated)
+          : translated;
+      },
+    [effectiveLanguage, format, previewPseudoLocale]
   );
+  const t = useMemo(
+    () => translatorFor(messagesByLang),
+    [translatorFor, messagesByLang]
+  );
+  const tInline = useMemo(() => translatorFor(EMPTY_MESSAGES), [translatorFor]);
 
   const value = useMemo<TranslationContextValue>(
-    () => ({ t, language: effectiveLanguage, setLanguage, languages, dir }),
-    [t, effectiveLanguage, setLanguage, languages, dir]
+    () => ({
+      t,
+      tInline,
+      language: effectiveLanguage,
+      setLanguage,
+      languages,
+      dir,
+    }),
+    [t, tInline, effectiveLanguage, setLanguage, languages, dir]
   );
 
   return (
@@ -306,8 +326,19 @@ function useTranslationContext(hook: string): TranslationContextValue {
 /** Tolgee-compatible: `const { t } = useTranslate()`. */
 export function useTranslate() {
   const ctx = useTranslationContext('useTranslate');
-  return { t: ctx.t };
+  // The server never has a catalog, and a lazy descendant can hydrate after
+  // the catalog has already reached context. Gating per consumer means every
+  // hydrating render replays the inline defaults, then re-renders with the
+  // catalog once that consumer commits.
+  const hydrated = useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false
+  );
+  return { t: hydrated ? ctx.t : ctx.tInline };
 }
+
+const subscribeNever = () => () => {};
 
 /** Active language + switcher + direction + the available languages. */
 export function useLanguage() {

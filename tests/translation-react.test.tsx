@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { StrictMode, Suspense } from 'react';
+import { hydrateRoot, type Root } from 'react-dom/client';
+import { renderToString } from 'react-dom/server';
 import {
   TranslationProvider,
   useLanguage,
@@ -36,6 +39,57 @@ function IcuDemo() {
 }
 
 describe('TranslationProvider / useTranslate', () => {
+  it.each([false, true])(
+    'loads messages without discarding a hydrating child (StrictMode=%s)',
+    async (strict) => {
+      let blocked = false;
+      let unblock!: () => void;
+      const pending = new Promise<void>((resolve) => {
+        unblock = resolve;
+      });
+      function DeferredDemo() {
+        if (blocked) throw pending;
+        return <Demo />;
+      }
+      const content = (
+        <TranslationProvider
+          languages={[{ tag: 'es', label: 'Español' }]}
+          defaultLanguage="es"
+          loadMessages={async () => ({ hello: 'Hola, {name}' })}
+        >
+          <Suspense fallback={<div>Loading route</div>}>
+            <DeferredDemo />
+          </Suspense>
+        </TranslationProvider>
+      );
+      const tree = strict ? <StrictMode>{content}</StrictMode> : content;
+      const container = document.createElement('div');
+      container.innerHTML = renderToString(tree);
+      const original = container.querySelector('[data-testid="msg"]');
+      document.body.append(container);
+      const recoveries: unknown[] = [];
+      let root: Root | undefined;
+      try {
+        blocked = true;
+        await act(async () => {
+          root = hydrateRoot(container, tree, {
+            onRecoverableError: (error) => recoveries.push(error),
+          });
+        });
+        await act(async () => {
+          blocked = false;
+          unblock();
+          await pending;
+        });
+        const translated = await within(container).findByText('Hola, Ana');
+        expect(recoveries.map((error) => String(error))).toEqual([]);
+        expect(translated).toBe(original);
+      } finally {
+        await act(async () => root?.unmount());
+        container.remove();
+      }
+    }
+  );
   it('formats an explicit ICU inline default before messages load', () => {
     render(
       <TranslationProvider
