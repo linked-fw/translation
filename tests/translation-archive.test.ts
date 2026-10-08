@@ -290,7 +290,9 @@ describe('full-fidelity translation archive', () => {
   });
 
   it('verifies included catalog objects and rejects corrupt bytes', async () => {
-    const objectBody = encoder.encode('{"nav.home":"Inicio"}');
+    // TextEncoder comes from Node, Uint8Array from jsdom: copy the bytes into this realm's
+    // Uint8Array, as the parsed body is, so toEqual compares bytes rather than constructors.
+    const objectBody = new Uint8Array(encoder.encode('{"nav.home":"Inicio"}'));
     const hash = await sha256Hex(decoder.decode(objectBody));
     const archive = await createTranslationArchive({
       ...snapshot(),
