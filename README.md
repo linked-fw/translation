@@ -43,8 +43,8 @@ package works without either peer.
 
 ## Code-canonical discovery
 
-Create Now's Host Agent can inventory a managed app without running its
-packages:
+A host application's tooling can inventory a consuming app without running
+its packages:
 
 - literal `t()` and `<T>` calls are extracted from `src/`;
 - finite dynamic key families are declared in a root
@@ -53,11 +53,10 @@ packages:
   `"linkedTranslationCatalog": "./translation.catalog.json"` in its
   `package.json`.
 
-The Host Agent walks installed `dependencies` and `optionalDependencies`,
-parses only JSON, and never imports package JavaScript. A package catalog path
-must remain inside that package. Inventory is branch-local because discovery
-always runs against the exact managed branch clone and persists into that
-branch's metadata dataset.
+Discovery walks installed `dependencies` and `optionalDependencies`, parses
+only JSON, and never imports package JavaScript. A package catalog path must
+remain inside that package. Inventory is branch-local when a host runs
+discovery against the exact branch checkout and stores it per branch.
 
 ## Full-fidelity archives
 
@@ -85,13 +84,12 @@ Reusable asset packages can include a schema-versioned shape translation
 catalog. The catalog is code-canonical package content; installation copies
 only missing keys and active-language units into the consuming app's graph.
 Existing app-authored translations are never overwritten. Packages may export
-the TypeScript object or ship the same contract as JSON for Create Now's Host
-Agent to discover without executing application code.
+the TypeScript object or ship the same contract as JSON for a host's tooling
+to discover without executing application code.
 
-Create Now's editor, menu contribution, entitlement, and capability activation
-are deliberately not part of this package. They live in Create Now's
-`translation-studio` feature so applications can use this runtime without
-depending on Create Now.
+Authoring tools — editors, menus, entitlements, capability activation — are
+deliberately not part of this package. They belong to the host application, so
+any app can use this runtime without depending on a particular host.
 
 The package targets `@_linked/core` 2.14.4. Its ontology terms live at
 `https://linked.cm/ont/translation/` (prefix `translation:`), following the
@@ -105,9 +103,10 @@ follow `https://linked.cm/shape/translation/{ShapeName}` (e.g.
 Language codes are BCP-47 strings. `TranslationLanguage` stores app-scoped RDF
 resources for the code, stable language identifier, native and English names,
 text direction, parent/fallback links, and enabled/supported flags. Hosts choose
-an explicit configuration store; the portable package does not assume a CN
-control plane. `defineLanguage` supplies editable defaults from the platform's
-Unicode locale data. Validate relationship cycles before saving.
+an explicit configuration store; the portable package does not assume a
+particular host's control plane. `defineLanguage` supplies editable defaults
+from the platform's Unicode locale data. Validate relationship cycles before
+saving.
 
 Publish the resource list as `languages.json` alongside the catalogs. Wire
 `createCdnLanguageLoader({base})` to the React provider's `loadLanguages` prop

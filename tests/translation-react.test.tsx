@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { StrictMode, Suspense } from 'react';
+import { hydrateRoot, type Root } from 'react-dom/client';
+import { renderToString } from 'react-dom/server';
 import {
+  TRANSLATION_PREVIEW_EVENT,
   TranslationProvider,
+  type TranslationPreviewDetail,
   useLanguage,
   useTranslate,
 } from '@_linked/translation/react';
@@ -36,6 +41,57 @@ function IcuDemo() {
 }
 
 describe('TranslationProvider / useTranslate', () => {
+  it.each([false, true])(
+    'loads messages without discarding a hydrating child (StrictMode=%s)',
+    async (strict) => {
+      let blocked = false;
+      let unblock!: () => void;
+      const pending = new Promise<void>((resolve) => {
+        unblock = resolve;
+      });
+      function DeferredDemo() {
+        if (blocked) throw pending;
+        return <Demo />;
+      }
+      const content = (
+        <TranslationProvider
+          languages={[{ tag: 'es', label: 'Español' }]}
+          defaultLanguage="es"
+          loadMessages={async () => ({ hello: 'Hola, {name}' })}
+        >
+          <Suspense fallback={<div>Loading route</div>}>
+            <DeferredDemo />
+          </Suspense>
+        </TranslationProvider>
+      );
+      const tree = strict ? <StrictMode>{content}</StrictMode> : content;
+      const container = document.createElement('div');
+      container.innerHTML = renderToString(tree);
+      const original = container.querySelector('[data-testid="msg"]');
+      document.body.append(container);
+      const recoveries: unknown[] = [];
+      let root: Root | undefined;
+      try {
+        blocked = true;
+        await act(async () => {
+          root = hydrateRoot(container, tree, {
+            onRecoverableError: (error) => recoveries.push(error),
+          });
+        });
+        await act(async () => {
+          blocked = false;
+          unblock();
+          await pending;
+        });
+        const translated = await within(container).findByText('Hola, Ana');
+        expect(recoveries.map((error) => String(error))).toEqual([]);
+        expect(translated).toBe(original);
+      } finally {
+        await act(async () => root?.unmount());
+        container.remove();
+      }
+    }
+  );
   it('formats an explicit ICU inline default before messages load', () => {
     render(
       <TranslationProvider
@@ -90,5 +146,55 @@ describe('TranslationProvider / useTranslate', () => {
       </TranslationProvider>,
     );
     await waitFor(() => expect(document.documentElement.dir).toBe('rtl'));
+  });
+
+  it('observes preview locale and pseudo conditions without persisting a preference', async () => {
+    const storageKey = 'preview-language-test';
+    window.localStorage.removeItem(storageKey);
+    render(
+      <TranslationProvider
+        languages={[
+          { tag: 'en', label: 'English' },
+          { tag: 'ar', label: 'العربية' },
+        ]}
+        defaultLanguage="en"
+        loadMessages={async (language) =>
+          language === 'ar' ? { hello: 'مرحبا، {name}' } : {}
+        }
+        storageKey={storageKey}
+      >
+        <Demo />
+      </TranslationProvider>
+    );
+
+    const preview = (detail: TranslationPreviewDetail) =>
+      act(() => {
+        window.dispatchEvent(
+          new CustomEvent(TRANSLATION_PREVIEW_EVENT, { detail })
+        );
+      });
+    expect(TRANSLATION_PREVIEW_EVENT).toBe('linked:translation-preview');
+
+    preview({ language: 'ar', pseudoLocale: 'expanded', direction: 'ltr' });
+
+    await waitFor(() =>
+      expect(screen.getByTestId('msg').textContent).toMatch(
+        /^［مرحبا، Ana ·+］$/
+      )
+    );
+    expect(screen.getByTestId('lang').textContent).toBe('ar');
+    expect(screen.getByTestId('dir').textContent).toBe('ltr');
+    expect(document.documentElement.dir).toBe('ltr');
+    expect(window.localStorage.getItem(storageKey)).toBeNull();
+
+    // Each event replaces the whole preview; an empty detail ends it.
+    preview({});
+    await waitFor(() =>
+      expect(screen.getByTestId('msg').textContent).toBe('Hello, Ana')
+    );
+    expect(screen.getByTestId('lang').textContent).toBe('en');
+    expect(screen.getByTestId('dir').textContent).toBe('ltr');
+    expect(document.documentElement.lang).toBe('en');
+    expect(window.localStorage.getItem(storageKey)).toBeNull();
   });
 });

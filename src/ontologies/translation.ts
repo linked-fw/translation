@@ -12,7 +12,7 @@ export var loadData = () => {
  * Public ontology namespace for the translation package. First-party Linked
  * ontologies live at `https://linked.cm/ont/{ontologySlug}/{localName}`, where
  * the ontology slug — and the prefix label — is the package's public slug
- * (Create Now arch-02, "Public ontology namespace"). So terms are
+ * (the LINKED first-party ontology namespace rule). So terms are
  * `https://linked.cm/ont/translation/TranslationKey` and the prefix is
  * `translation:`. Before 0.5.0 this was `https://id.linked.cm/translation/vocab#`.
  */
@@ -51,6 +51,7 @@ export var ofNode = ns('ofNode'); // content-translation subject (kind:'content'
 export var ofField = ns('ofField');
 export var ofShape = ns('ofShape'); // semantic SHACL shape context for package keys
 export var ofProperty = ns('ofProperty'); // semantic predicate context for package keys
+export var ofResource = ns('ofResource'); // arbitrary semantic resource (action, group, condition, port)
 export var fromPackage = ns('fromPackage'); // package that supplied a seed catalog
 export var overridden = ns('overridden'); // app diverged this shape key from canonical → excluded from shape propagation (AD-N)
 export var shapeSource = ns('shapeSource'); // canonical source snapshot at override time → the value "clear override" reverts to (AD-N)
@@ -78,7 +79,7 @@ export var publishedAt = ns('publishedAt');
 export var supportedUntil = ns('supportedUntil');
 export var qualitySummary = ns('qualitySummary');
 
-// ── CapabilityAppConfig properties (stored in Create Now's cn-main) ────
+// ── CapabilityAppConfig properties (stored in the host's app configuration) ────
 export var languages = ns('languages'); // active BCP-47 tags, including source
 export var defaultLanguage = ns('defaultLanguage'); // authored/source language
 export var cdnTarget = ns('cdnTarget'); // delivery base URL / bucket prefix — the "repoint" knob (AD-K, P2)
@@ -167,6 +168,7 @@ export const tr = {
   ofField,
   ofShape,
   ofProperty,
+  ofResource,
   fromPackage,
   overridden,
   shapeSource,

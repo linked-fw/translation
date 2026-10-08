@@ -44,7 +44,7 @@ const document = (): TranslationExchangeDocument => ({
 describe('translation exchange contracts', () => {
   afterEach(() => clearTranslationFormatAdapters());
 
-  it('normalizes a canonical Create Now exchange document', () => {
+  it('normalizes a canonical, version-evidenced exchange document', () => {
     const normalized = validateTranslationExchangeDocument(document());
     expect(normalized.sourceLanguage).toBe('en-US');
     expect(normalized.targetLanguages).toEqual(['pt-BR']);
@@ -68,7 +68,7 @@ describe('translation exchange contracts', () => {
     'sourceHash',
     'contractHash',
     'argumentSignature',
-  ] as const)('rejects a Create Now export missing %s', (field) => {
+  ] as const)('rejects a version-evidenced export missing %s', (field) => {
     const input = document() as any;
     delete input.entries[0][field];
     expect(() => validateTranslationExchangeDocument(input)).toThrow(

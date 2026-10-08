@@ -11,8 +11,8 @@ import {
 } from '@_linked/translation/archive';
 import { DEFAULT_TRANSLATION_JSON_ARCHIVE_LIMITS, sha256Hex } from '@_linked/translation';
 
-const SOURCE_APP = 'https://create.now/workspace/source/app/example';
-const TARGET_APP = 'https://create.now/workspace/target/app/example';
+const SOURCE_APP = 'https://example.org/workspace/source/app/example';
+const TARGET_APP = 'https://example.org/workspace/target/app/example';
 const SHAPE_IRI = 'https://linked.cm/pkg/profile/shape/Profile';
 const WEB_ID = 'https://webid.email/id/translator';
 const encoder = new TextEncoder();
@@ -290,7 +290,9 @@ describe('full-fidelity translation archive', () => {
   });
 
   it('verifies included catalog objects and rejects corrupt bytes', async () => {
-    const objectBody = encoder.encode('{"nav.home":"Inicio"}');
+    // TextEncoder comes from Node, Uint8Array from jsdom: copy the bytes into this realm's
+    // Uint8Array, as the parsed body is, so toEqual compares bytes rather than constructors.
+    const objectBody = new Uint8Array(encoder.encode('{"nav.home":"Inicio"}'));
     const hash = await sha256Hex(decoder.decode(objectBody));
     const archive = await createTranslationArchive({
       ...snapshot(),

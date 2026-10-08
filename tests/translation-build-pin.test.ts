@@ -9,7 +9,10 @@ import {
   findReusableCompiledRelease,
   translationContractSetHash,
 } from '../src/release.js';
-import { sha256Hex } from '../src/key-version.js';
+import {
+  sha256Hex,
+  deriveTranslationKeyVersionContract,
+} from '../src/key-version.js';
 
 const entries: TranslationEntryRecord[] = [{
   id: 'key',
@@ -50,6 +53,246 @@ describe('build-owned translation pins', () => {
       file: 'app.tsx',
       line: 1,
     }])).rejects.toThrow('source-changed');
+  });
+
+  it('does not bypass a changed argument contract just because the app owns an override', async () => {
+    await expect(
+      buildSnapshotContractSetHash(
+        [
+          {
+            ...entries[0],
+            overridden: true,
+            ofResource: 'https://package.example/help',
+          },
+        ],
+        [
+          {
+            key: 'nav.home',
+            sourceText: 'Package help for {font}',
+            format: 'simple',
+          },
+        ]
+      )
+    ).rejects.toThrow('argument-contract-changed');
+  });
+
+  const appHelp = async (
+    sourceText: string,
+    format: 'simple' | 'icu' = 'simple'
+  ): Promise<TranslationEntryRecord> => ({
+    key: 'help.weight',
+    namespace: 'builder.css',
+    sourceText,
+    format,
+    kind: 'ui',
+    overridden: true,
+    ofResource: 'https://package.example/help/weight',
+    fromPackage: '@foreign/controls',
+    units: {},
+    currentVersion: {
+      ...(await deriveTranslationKeyVersionContract({
+        sourceText,
+        format,
+        sourceLanguage: 'en',
+      })),
+      id: 'urn:app:help:version',
+      versionId: 'app-help-version',
+    },
+  });
+
+  it('pins compatible app-owned help and compiles the app wording, never the package default', async () => {
+    const entry = await appHelp('Choose how thick {font} looks.');
+    const original = JSON.stringify(entry);
+    const declarations = [
+      {
+        key: entry.key,
+        namespace: entry.namespace,
+        sourceText: 'Thickness for {font}.',
+        format: 'simple' as const,
+        status: 'confirmed' as const,
+      },
+    ];
+    const hash = await buildSnapshotContractSetHash([entry], declarations);
+    const release = await compileRelease([entry], {
+      appId: 'app',
+      branchId: 'branch',
+      channel: 'preview',
+      defaultLanguage: 'en',
+      languages: ['en'],
+      publicBase: 'https://cdn.example/app',
+    });
+    expect(release.manifest.contractSetHash).toBe(hash);
+    expect(release.manifest.keyVersions[entry.key]).toBe(
+      entry.currentVersion!.id
+    );
+    expect(
+      JSON.parse(new TextDecoder().decode(release.immutableObjects[0].body))
+    ).toEqual({ [entry.key]: entry.sourceText });
+    expect(JSON.stringify(entry)).toBe(original);
+    expect(declarations[0].sourceText).toBe('Thickness for {font}.');
+  });
+
+  it('an upstream wording-only update remains compatible with the explicit local wording', async () => {
+    const entry = await appHelp('Our help for {font}.');
+    const hash = await translationContractSetHash([entry]);
+    for (const sourceText of [
+      'Package help for {font}.',
+      'Updated package wording about {font}.',
+    ]) {
+      await expect(
+        buildSnapshotContractSetHash(
+          [entry],
+          [
+            {
+              key: entry.key,
+              namespace: entry.namespace,
+              sourceText,
+              format: 'simple',
+            },
+          ]
+        )
+      ).resolves.toBe(hash);
+    }
+  });
+
+  it.each([
+    ['missing override flag', { overridden: undefined }],
+    ['false override flag', { overridden: false }],
+    ['no declared owner', { ofResource: undefined, fromPackage: undefined }],
+  ])('retains source-drift refusal for %s', async (_name, patch) => {
+    const entry = { ...(await appHelp('App help')), ...patch };
+    await expect(
+      buildSnapshotContractSetHash(
+        [entry],
+        [{ key: entry.key, sourceText: 'Package help', format: 'simple' }]
+      )
+    ).rejects.toThrow('source-changed');
+  });
+
+  it.each([
+    ['format', 'Package {font}', 'icu', 'format-changed'],
+    [
+      'renamed argument',
+      'Package {family}',
+      'simple',
+      'argument-contract-changed',
+    ],
+    [
+      'new argument',
+      'Package {font} {weight}',
+      'simple',
+      'argument-contract-changed',
+    ],
+    ['removed argument', 'Package help', 'simple', 'argument-contract-changed'],
+  ] as const)(
+    'refuses changed %s rather than weakening the message contract',
+    async (_name, sourceText, format, reason) => {
+      const entry = await appHelp('Our {font} help');
+      await expect(
+        buildSnapshotContractSetHash(
+          [entry],
+          [{ key: entry.key, sourceText, format }]
+        )
+      ).rejects.toThrow(reason);
+    }
+  );
+
+  it('refuses changed ICU roles and invalid messages', async () => {
+    const entry = await appHelp(
+      '{count, plural, one {One item} other {Many items}}',
+      'icu'
+    );
+    await expect(
+      buildSnapshotContractSetHash(
+        [entry],
+        [{ key: entry.key, sourceText: '{count, number} items', format: 'icu' }]
+      )
+    ).rejects.toThrow('argument-contract-changed');
+    await expect(
+      buildSnapshotContractSetHash(
+        [entry],
+        [{ key: entry.key, sourceText: '{count, plural,', format: 'icu' }]
+      )
+    ).rejects.toThrow('Cannot version invalid ICU');
+  });
+
+  it('requires an explicit source format and internally consistent app version', async () => {
+    const entry = await appHelp('Local help');
+    await expect(
+      buildSnapshotContractSetHash(
+        [entry],
+        [
+          {
+            key: entry.key,
+            sourceText: 'Package help',
+            file: 'app.ts',
+            line: 1,
+          },
+        ]
+      )
+    ).rejects.toThrow('source-changed');
+    const corrupt = {
+      ...entry,
+      currentVersion: {
+        ...entry.currentVersion!,
+        sourceText: 'Local {missingSignature} help',
+      },
+    };
+    await expect(
+      buildSnapshotContractSetHash(
+        [corrupt],
+        [{ key: entry.key, sourceText: 'Package help', format: 'simple' }]
+      )
+    ).rejects.toThrow('source-changed');
+  });
+
+  it('does not use an app override to settle conflicting package authorities', async () => {
+    const entry = await appHelp('Local help');
+    await expect(
+      buildSnapshotContractSetHash(
+        [entry],
+        [
+          { key: entry.key, sourceText: 'Package one', format: 'simple' },
+          { key: entry.key, sourceText: 'Package two', format: 'simple' },
+        ]
+      )
+    ).rejects.toThrow('conflicting source defaults or formats');
+  });
+
+  it('requires the same declared namespace and a source mirror that matches the immutable version', async () => {
+    const entry = await appHelp('Local help');
+    for (const namespace of [undefined, 'another.namespace']) {
+      await expect(
+        buildSnapshotContractSetHash(
+          [entry],
+          [
+            {
+              key: entry.key,
+              namespace,
+              sourceText: 'Package help',
+              format: 'simple',
+            },
+          ]
+        )
+      ).rejects.toThrow('source-changed');
+    }
+    const mirrorMismatch = {
+      ...entry,
+      sourceText: 'Incorrect mirror {unexpected}',
+    };
+    await expect(
+      buildSnapshotContractSetHash(
+        [mirrorMismatch],
+        [
+          {
+            key: entry.key,
+            namespace: entry.namespace,
+            sourceText: 'Package help',
+            format: 'simple',
+          },
+        ]
+      )
+    ).rejects.toThrow('source-changed');
   });
 
   it('uses the key-version classifier for confirmed declaration contracts', async () => {

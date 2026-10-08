@@ -100,7 +100,7 @@ describe('translation exchange export', () => {
     ]);
   });
 
-  it('marks shape/package-owned keys as semantic exchange entries', async () => {
+  it('marks shape/package/resource-owned keys as semantic exchange entries', async () => {
     const result = await createTranslationExchangeDocument(
       [
         entry(
@@ -109,12 +109,21 @@ describe('translation exchange export', () => {
           { es: { language: 'es', text: 'Nombre', state: 'reviewed' } },
           { ofShape: 'schema:Person' },
         ),
+        entry(
+          'builder.actions.resetLayout',
+          'builder.actions',
+          { es: { language: 'es', text: 'Restablecer diseño', state: 'reviewed' } },
+          { ofResource: 'https://example.org/action/builder/reset-layout' },
+        ),
       ],
       {
         sourceLanguage: 'en',
         revisionWatermark: 'revision-10',
       },
     );
-    expect(result.document.entries[0].kind).toBe('semantic');
+    expect(result.document.entries.map(({ kind }) => kind)).toEqual([
+      'semantic',
+      'semantic',
+    ]);
   });
 });

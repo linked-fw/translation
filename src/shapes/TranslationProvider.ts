@@ -44,11 +44,31 @@ export interface TranslationKeyInput {
   ofField?: string;
   ofShape?: string;
   ofProperty?: string;
+  ofResource?: string;
   fromPackage?: string;
   /** Force the override flag; when omitted it is derived (see upsertTranslationKey). */
   overridden?: boolean;
   format?: 'simple' | 'icu';
   sourceLanguage?: string;
+}
+
+/** Trusted caller context, not a client payload flag. Package discovery and
+ * explicit app authoring have different ownership semantics. */
+export interface TranslationKeyWriteContext {
+  createdBy?: string;
+  /**
+   * `'declaration-sync'` is a refresh from code/package declarations: it never
+   * marks a key overridden, and it leaves an existing app override untouched
+   * (answering `preservedOverride: true`). Anything else is an app edit.
+   */
+  source?: 'app-edit' | 'declaration-sync';
+}
+export interface TranslationKeyWriteResult {
+  id: string;
+  versionId: string;
+  versionCreated: boolean;
+  /** Present when a declaration refresh kept the app's override and wrote nothing. */
+  preservedOverride?: true;
 }
 
 export interface TranslationUnitInput {
@@ -313,6 +333,7 @@ export function groupTranslationEntries(
       format: row.format === 'icu' ? 'icu' : 'simple',
       ofShape: iri(row.ofShape),
       ofProperty: iri(row.ofProperty),
+      ofResource: iri(row.ofResource),
       fromPackage: row.fromPackage || undefined,
       overridden:
         (row as any).overridden === true || (row as any).overridden === 'true'
@@ -397,6 +418,7 @@ export async function listTranslationKeys(data: { appId: string }) {
     k.ofField,
     k.ofShape,
     k.ofProperty,
+    k.ofResource,
     k.fromPackage,
     k.overridden,
     k.format,
@@ -423,6 +445,7 @@ export async function listTranslationEntries(data: {
       k.format,
       k.ofShape,
       k.ofProperty,
+      k.ofResource,
       k.fromPackage,
       k.overridden,
       k.currentVersion,
@@ -1061,8 +1084,8 @@ export async function decideTranslationProposal(
  */
 export async function upsertTranslationKey(
   data: TranslationKeyInput,
-  authorship: { createdBy?: string } = {},
-): Promise<{ id: string; versionId: string; versionCreated: boolean }> {
+  authorship: TranslationKeyWriteContext = {},
+): Promise<TranslationKeyWriteResult> {
   const appId = requireText(data.appId, 'appId');
   const key = requireText(data.key, 'key');
   requireText(data.sourceText, 'sourceText');
@@ -1078,29 +1101,59 @@ export async function upsertTranslationKey(
     ofField: data.ofField,
     ofShape: data.ofShape ? { id: data.ofShape } : undefined,
     ofProperty: data.ofProperty ? { id: data.ofProperty } : undefined,
+    ofResource: data.ofResource ? { id: data.ofResource } : undefined,
     fromPackage: data.fromPackage,
-    overridden: data.overridden === true ? true : undefined,
+    overridden: data.overridden,
     format: data.format ?? 'simple',
   } as any;
+  // No catch: a failed read is not permission to create or overwrite the key.
   const existing = await TranslationKey.select((k) => [
     k.sourceText,
     k.format,
     k.ofShape,
+    k.ofProperty,
+    k.ofResource,
+    k.fromPackage,
     k.overridden,
     k.currentVersion,
   ])
     .where((k) => k.equals({ id } as any))
-    .one()
-    .catch(() => null);
+    .one();
   if (existing) {
     const sourceChanged = (existing as any).sourceText !== data.sourceText;
+    const formatChanged =
+      ((existing as any).format ?? 'simple') !== (data.format ?? 'simple');
     const wasOverridden = (existing as any).overridden === true;
-    // AD-N override rule: editing the source of a SHAPE-owned key through the
-    // per-app path (this write) marks the app copy `overridden`, so shape-route
-    // propagation won't clobber the app's local wording. An explicit
-    // `data.overridden` (e.g. the installer clearing it) always wins.
-    const isShapeKey = !!(existing as any).ofShape || !!data.ofShape;
-    if (data.overridden === undefined && isShapeKey && sourceChanged) {
+    if (authorship.source === 'declaration-sync' && wasOverridden) {
+      const versionId = iri((existing as any).currentVersion);
+      if (!versionId)
+        throw new Error(
+          `Translation override ${id} has no current version; refresh refused without changing its source.`
+        );
+      // No key write, version creation or unit invalidation. The declaration
+      // inventory still records the package's current source independently.
+      return { id, versionId, versionCreated: false, preservedOverride: true };
+    }
+    // AD-N ownership also covers property/resource/package declarations (help,
+    // actions, groups), not only shapes. App edits preserve the first canonical
+    // wording in the existing shapeSource carrier. Only an explicit app edit
+    // may clear the override; automatic discovery cannot clear it by payload.
+    const isDeclaredKey = !!(
+      (existing as any).ofShape ||
+      (existing as any).ofProperty ||
+      (existing as any).ofResource ||
+      (existing as any).fromPackage ||
+      data.ofShape ||
+      data.ofProperty ||
+      data.ofResource ||
+      data.fromPackage
+    );
+    if (
+      authorship.source !== 'declaration-sync' &&
+      data.overridden === undefined &&
+      isDeclaredKey &&
+      (sourceChanged || formatChanged)
+    ) {
       values.overridden = true;
       // Snapshot the canonical at FIRST divergence so "clear override" has a
       // value to revert to even for a single-app project. Later edits keep the
@@ -1134,7 +1187,14 @@ export async function upsertTranslationKey(
           })
         : currentVersion;
     values.currentVersion = { id: nextVersion.id };
-    await TranslationKey.update(values).for({ id } as any);
+    // In the Linked mutation DSL an explicitly present `undefined` removes
+    // that predicate. A partial source edit has not requested removal of the
+    // declaration owner, help description, or existing override flag. Omit
+    // untouched fields; an explicit false (reset) remains a real write.
+    const patch = Object.fromEntries(
+      Object.entries(values).filter(([, value]) => value !== undefined)
+    );
+    await TranslationKey.update(patch as any).for({ id } as any);
     if (decision.action === 'create-version') {
       await TranslationUnit.update({ state: 'stale' } as any).where((u) =>
         u.ofKey.equals({ id } as any),
@@ -1491,7 +1551,7 @@ export class TranslationProvider extends ShapeProvider {
 
   /**
    * Authoring gate. Reads `linkedAuth` off the request the LINKED server already
-   * populates, so this stays portable (no Create Now import, AD-G).
+   * populates, so this stays portable (no host-application import, AD-G).
    *
    * Every method except `getMessages` resolves the caller once, synchronously,
    * before its first `await`, and uses that value for both the permission check

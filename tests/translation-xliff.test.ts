@@ -188,7 +188,7 @@ describe('XLIFF exchange adapters', () => {
     ).rejects.toThrow('DTD or entity declaration is not allowed');
   });
 
-  it('parses foreign XLIFF without inventing Create Now evidence', async () => {
+  it('parses foreign XLIFF without inventing version evidence', async () => {
     const parsed = await xliff20Adapter.parse(await fixture('foreign-2.0.xlf'));
 
     expect(parsed.sourceLanguage).toBe('en');

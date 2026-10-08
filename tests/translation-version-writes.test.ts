@@ -24,6 +24,176 @@ afterEach(() => {
 });
 
 describe('translation version dual-write', () => {
+  const existingDeclared = (extra: Record<string, unknown> = {}) => {
+    vi.spyOn(TranslationKey, 'select').mockReturnValue(
+      oneResult({
+        sourceText: 'Home',
+        format: 'simple',
+        currentVersion: { id: CURRENT_ID },
+        ofResource: { id: 'https://package.example/help' },
+        fromPackage: '@foreign/help',
+        ...extra,
+      })
+    );
+    vi.spyOn(TranslationKeyVersion, 'select').mockReturnValue(
+      oneResult({
+        id: CURRENT_ID,
+        versionId: '01CURRENT',
+        sourceLanguage: 'en',
+        sourceText: 'Home',
+        format: 'simple',
+        argumentSignature: '[]',
+        contractHash: 'contract',
+        sourceHash: 'source',
+      })
+    );
+    const update = vi
+      .spyOn(TranslationKey, 'update')
+      .mockReturnValue({ for: vi.fn().mockResolvedValue({}) } as any);
+    const create = vi
+      .spyOn(TranslationKey, 'create')
+      .mockResolvedValue({} as any);
+    const version = vi
+      .spyOn(TranslationKeyVersion, 'create')
+      .mockResolvedValue({} as any);
+    const stale = vi
+      .spyOn(TranslationUnit, 'update')
+      .mockReturnValue({ where: vi.fn().mockResolvedValue({}) } as any);
+    return { update, create, version, stale };
+  };
+
+  it('marks an explicit app edit of package resource help as an override and snapshots its canonical source', async () => {
+    const calls = existingDeclared();
+    await upsertTranslationKey({
+      appId: APP,
+      key: 'nav.home',
+      sourceText: 'Our own wording',
+    });
+    expect(calls.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        overridden: true,
+        shapeSource: 'Home',
+        sourceText: 'Our own wording',
+      })
+    );
+    expect(calls.version).toHaveBeenCalledOnce();
+    const patch = calls.update.mock.calls[0]![0];
+    for (const field of [
+      'description',
+      'ofNode',
+      'ofField',
+      'ofShape',
+      'ofProperty',
+      'ofResource',
+      'fromPackage',
+    ])
+      expect(patch).not.toHaveProperty(field);
+    expect(Object.values(patch)).not.toContain(undefined);
+  });
+
+  it('declaration refresh updates unmodified package help without misclassifying it as a local edit', async () => {
+    const calls = existingDeclared();
+    await upsertTranslationKey(
+      { appId: APP, key: 'nav.home', sourceText: 'Updated package help' },
+      { source: 'declaration-sync' }
+    );
+    expect(calls.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceText: 'Updated package help',
+      })
+    );
+    expect(calls.update.mock.calls[0]![0]).not.toHaveProperty('overridden');
+    expect(calls.update.mock.calls[0]![0]).not.toHaveProperty('shapeSource');
+  });
+
+  it('preserves an app-owned message-format edit even when the source wording is unchanged', async () => {
+    const calls = existingDeclared();
+    await upsertTranslationKey({
+      appId: APP,
+      key: 'nav.home',
+      sourceText: 'Home',
+      format: 'icu',
+    });
+    expect(calls.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        overridden: true,
+        shapeSource: 'Home',
+        format: 'icu',
+      })
+    );
+  });
+
+  it('package refresh preserves an app override with zero writes even if the incoming payload asks to clear it', async () => {
+    const calls = existingDeclared({ overridden: true });
+    const result = await upsertTranslationKey(
+      {
+        appId: APP,
+        key: 'nav.home',
+        sourceText: 'New package wording',
+        overridden: false,
+      },
+      { source: 'declaration-sync' }
+    );
+    expect(result).toEqual({
+      id: KEY_ID,
+      versionId: CURRENT_ID,
+      versionCreated: false,
+      preservedOverride: true,
+    });
+    for (const call of Object.values(calls))
+      expect(call).not.toHaveBeenCalled();
+  });
+
+  it('later local edits keep the original source snapshot; an explicit author reset can clear the flag', async () => {
+    const calls = existingDeclared({ overridden: true });
+    await upsertTranslationKey({
+      appId: APP,
+      key: 'nav.home',
+      sourceText: 'A later edit',
+    });
+    expect(calls.update.mock.calls[0]![0]).not.toHaveProperty('shapeSource');
+    await upsertTranslationKey({
+      appId: APP,
+      key: 'nav.home',
+      sourceText: 'Canonical again',
+      overridden: false,
+    });
+    expect(calls.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({ overridden: false })
+    );
+  });
+
+  it('refuses refreshing an overridden legacy key without a current version rather than guessing a replacement', async () => {
+    const calls = existingDeclared({
+      overridden: true,
+      currentVersion: undefined,
+    });
+    await expect(
+      upsertTranslationKey(
+        { appId: APP, key: 'nav.home', sourceText: 'Package' },
+        { source: 'declaration-sync' }
+      )
+    ).rejects.toThrow(/no current version/);
+    for (const call of Object.values(calls))
+      expect(call).not.toHaveBeenCalled();
+  });
+
+  it('a failed source read is not treated as permission to create or overwrite a key', async () => {
+    const calls = existingDeclared();
+    vi.mocked(TranslationKey.select).mockReturnValue({
+      where: () => ({
+        one: () => Promise.reject(new Error('source read failed')),
+      }),
+    } as any);
+    await expect(
+      upsertTranslationKey(
+        { appId: APP, key: 'nav.home', sourceText: 'Package' },
+        { source: 'declaration-sync' }
+      )
+    ).rejects.toThrow('source read failed');
+    for (const call of Object.values(calls))
+      expect(call).not.toHaveBeenCalled();
+  });
   it('creates a first version and then advances the logical-key pointer', async () => {
     vi.spyOn(TranslationKey, 'select').mockReturnValue(oneResult(null));
     const createKey = vi

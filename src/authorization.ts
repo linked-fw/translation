@@ -20,7 +20,7 @@ let resolver: TranslationAuthorizationResolver | undefined;
 
 /**
  * Host hook: the host decides who may read and author an app's translations
- * (Create Now evaluates its translator assignments and project roles here).
+ * (for example by evaluating its own translator assignments and project roles).
  *
  * The resolver is the only source of a "yes". A host that does not configure
  * one gets no authoring or read access over the translation provider; only the
