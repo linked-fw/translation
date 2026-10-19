@@ -1,5 +1,11 @@
 # @\_linked/translation
 
+## 0.8.1
+
+### Patch Changes
+
+- [#63](https://github.com/linked-fw/translation/pull/63) [`9e968c1`](https://github.com/linked-fw/translation/commit/9e968c16e2400063520ccc8b14396d70970a0011) Thanks [@flyon](https://github.com/flyon)! - Provider methods that need a session are declared `@callable('signed-in')` instead of the deprecated alias `'user'`. No behaviour change. Requires `@_linked/server-utils` ^1.14.0.
+
 ## 0.8.0
 
 ### Minor Changes
