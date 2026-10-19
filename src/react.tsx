@@ -1,3 +1,4 @@
+import { sharedState } from '@_linked/core/utils/sharedState';
 import {
   languageFallbacks,
   type TranslationLanguageDefinition,
@@ -100,7 +101,11 @@ interface TranslationContextValue {
   dir: 'ltr' | 'rtl';
 }
 
-const TranslationContext = createContext<TranslationContextValue | null>(null);
+// The context object is kept on globalThis: a context created per copy of this module would
+// leave a consumer in one copy blind to a provider from the other (it gets the null default).
+const { TranslationContext } = sharedState('@_linked/translation', 'react.contexts', () => ({
+  TranslationContext: createContext<TranslationContextValue | null>(null),
+}));
 
 export interface TranslationProviderProps {
   children: React.ReactNode;

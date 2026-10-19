@@ -1,3 +1,5 @@
+import { sharedState } from '@_linked/core/utils/sharedState';
+
 export type TranslationAuthoringAction =
   | 'manage'
   | 'review'
@@ -16,7 +18,11 @@ export type TranslationAuthorizationResolver = (
   request: TranslationAuthorizationRequest,
 ) => Promise<boolean>;
 
-let resolver: TranslationAuthorizationResolver | undefined;
+// On globalThis so a second copy of this module sees the resolver the host configured on the
+// first; a copy that cannot see it would deny every author.
+const state = sharedState('@_linked/translation', 'authorization', () => ({
+  resolver: undefined as TranslationAuthorizationResolver | undefined,
+}));
 
 /**
  * Host hook: the host decides who may read and author an app's translations
@@ -29,7 +35,7 @@ let resolver: TranslationAuthorizationResolver | undefined;
 export function configureTranslationAuthorization(
   next?: TranslationAuthorizationResolver,
 ): void {
-  resolver = next;
+  state.resolver = next;
 }
 
 /**
@@ -39,6 +45,7 @@ export function configureTranslationAuthorization(
 export async function canAuthorTranslation(
   request: TranslationAuthorizationRequest,
 ): Promise<boolean> {
+  const resolver = state.resolver;
   if (!resolver) return false;
   try {
     return (await resolver(request)) === true;

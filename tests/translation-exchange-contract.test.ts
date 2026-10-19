@@ -93,7 +93,7 @@ describe('translation exchange contracts', () => {
     );
   });
 
-  it('registers format adapters explicitly and rejects duplicate keys', () => {
+  it('registers format adapters explicitly and rejects a second adapter for a format', () => {
     const adapter: TranslationFormatAdapter = {
       format: 'csv',
       sniff: () => true,
@@ -107,9 +107,12 @@ describe('translation exchange contracts', () => {
     registerTranslationFormatAdapter(adapter);
     expect(getTranslationFormatAdapter('csv')).toBe(adapter);
     expect(listTranslationFormatAdapters()).toEqual([adapter]);
-    expect(() => registerTranslationFormatAdapter(adapter)).toThrow(
-      'already registered',
-    );
+    // The same adapter again (say, from a second copy of the host module) is not a conflict.
+    registerTranslationFormatAdapter(adapter);
+    expect(listTranslationFormatAdapters()).toEqual([adapter]);
+    expect(() =>
+      registerTranslationFormatAdapter({ ...adapter }),
+    ).toThrow('already registered');
   });
 
   it('rejects duplicate canonical key-language entries', () => {

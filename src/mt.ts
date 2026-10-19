@@ -8,6 +8,7 @@
  * SDK imports — concrete providers live with the host application and are
  * registered at boot.
  */
+import { sharedState } from '@_linked/core/utils/sharedState';
 import {
   analyzeMessage,
   compareMessageArguments,
@@ -72,7 +73,11 @@ export interface TranslationMtProvider {
   translateBatch(request: MtBatchRequest): Promise<MtBatchResult[]>;
 }
 
-const providers = new Map<string, TranslationMtProvider>();
+// On globalThis so a provider the host registers on one copy of this module is found by
+// another copy.
+const { providers } = sharedState('@_linked/translation', 'mt', () => ({
+  providers: new Map<string, TranslationMtProvider>(),
+}));
 
 export function registerMtProvider(provider: TranslationMtProvider): void {
   providers.set(provider.key, provider);
