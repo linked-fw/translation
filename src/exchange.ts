@@ -1,3 +1,4 @@
+import { sharedState } from '@_linked/core/utils/sharedState';
 import type { MessageFormat } from './core/messages.js';
 import { canonicalLanguageTag } from './key-version.js';
 import type { TranslationState } from './records.js';
@@ -131,7 +132,11 @@ const EXCHANGE_STATES = new Set<TranslationState>([
   'reviewed',
   'stale',
 ]);
-const adapters = new Map<TranslationFormat, TranslationFormatAdapter>();
+// On globalThis so an adapter the host registers on one copy of this module is found by
+// another copy.
+const { adapters } = sharedState('@_linked/translation', 'exchange', () => ({
+  adapters: new Map<TranslationFormat, TranslationFormatAdapter>(),
+}));
 
 function record(value: unknown, label: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -402,7 +407,11 @@ export function isConfirmedBuildDeclaration(
 export function registerTranslationFormatAdapter(
   adapter: TranslationFormatAdapter,
 ): void {
-  if (adapters.has(adapter.format)) {
+  const registered = adapters.get(adapter.format);
+  // The registry is process-wide, so the same adapter registered again (by a second copy of
+  // the host module that registers it) is not a conflict; a different adapter for the format is.
+  if (registered === adapter) return;
+  if (registered) {
     throw new Error(
       `Translation format adapter "${adapter.format}" is already registered.`,
     );
