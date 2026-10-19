@@ -1602,21 +1602,21 @@ export class TranslationProvider extends ShapeProvider {
     }
   }
 
-  @callable('user')
+  @callable('signed-in')
   async listKeys(data: { appId: string }) {
     const actor = this.requireActor();
     await this.requireAccess(actor, { appId: data?.appId }, 'read');
     return listTranslationKeys(data);
   }
 
-  @callable('user')
+  @callable('signed-in')
   async listEntries(data: { appId: string }): Promise<TranslationEntryRecord[]> {
     const actor = this.requireActor();
     await this.requireAccess(actor, { appId: data?.appId }, 'read');
     return listTranslationEntries(data);
   }
 
-  @callable('user')
+  @callable('signed-in')
   async listKeyVersions(data: {
     appId: string;
     key?: string;
@@ -1626,7 +1626,7 @@ export class TranslationProvider extends ShapeProvider {
     return listTranslationKeyVersions(data);
   }
 
-  @callable('user')
+  @callable('signed-in')
   async listMemoryMatches(data: {
     appId: string;
     key: string;
@@ -1637,7 +1637,7 @@ export class TranslationProvider extends ShapeProvider {
     return listTranslationMemoryMatches(data);
   }
 
-  @callable('user')
+  @callable('signed-in')
   async proposeRevision(data: {
     appId: string;
     key: string;
@@ -1661,7 +1661,7 @@ export class TranslationProvider extends ShapeProvider {
     });
   }
 
-  @callable('user')
+  @callable('signed-in')
   async listProposals(data: {
     appId: string;
     language?: string;
@@ -1682,7 +1682,7 @@ export class TranslationProvider extends ShapeProvider {
     return proposals.filter((_, index) => allowed[index]);
   }
 
-  @callable('user')
+  @callable('signed-in')
   async decideProposal(data: {
     appId: string;
     revisionId: string;
@@ -1706,7 +1706,7 @@ export class TranslationProvider extends ShapeProvider {
     return decideTranslationProposal(data, actor);
   }
 
-  @callable('user')
+  @callable('signed-in')
   async listMemory(data: {
     appId: string;
   }): Promise<TranslationMemoryRecord[]> {
@@ -1715,7 +1715,7 @@ export class TranslationProvider extends ShapeProvider {
     return listTranslationMemory(data);
   }
 
-  @callable('user')
+  @callable('signed-in')
   async pretranslateMemory(data: {
     appId: string;
     language: string;
@@ -1726,7 +1726,7 @@ export class TranslationProvider extends ShapeProvider {
     return pretranslateFromMemory(data, { author: actor });
   }
 
-  @callable('user')
+  @callable('signed-in')
   async applyMemoryMatch(data: {
     appId: string;
     key: string;
@@ -1738,7 +1738,7 @@ export class TranslationProvider extends ShapeProvider {
     return applyTranslationMemoryMatch(data, { author: actor });
   }
 
-  @callable('user')
+  @callable('signed-in')
   async listReleases(data: {
     appId: string;
   }): Promise<TranslationReleaseRecord[]> {
@@ -1747,7 +1747,7 @@ export class TranslationProvider extends ShapeProvider {
     return listTranslationReleases(data);
   }
 
-  @callable('user')
+  @callable('signed-in')
   async createRelease(
     data: Omit<TranslationReleaseRecord, 'id' | 'createdAt'> & {
       createdAt?: string;
@@ -1758,7 +1758,7 @@ export class TranslationProvider extends ShapeProvider {
     return createTranslationRelease(data);
   }
 
-  @callable('user')
+  @callable('signed-in')
   async advanceReleaseHotfix(data: {
     id: string;
     expectedSequence: number;
@@ -1772,14 +1772,14 @@ export class TranslationProvider extends ShapeProvider {
     return advanceTranslationReleaseHotfix({ ...data, appId });
   }
 
-  @callable('user')
+  @callable('signed-in')
   async upsertKey(data: TranslationKeyInput): Promise<{ id: string }> {
     const actor = this.requireActor();
     await this.requireAccess(actor, data, 'manage');
     return upsertTranslationKey(data, { createdBy: actor });
   }
 
-  @callable('user')
+  @callable('signed-in')
   async upsertUnit(data: TranslationUnitInput): Promise<{ id: string }> {
     const actor = this.requireActor();
     await this.requireAccess(actor, data, 'review');
@@ -1795,14 +1795,14 @@ export class TranslationProvider extends ShapeProvider {
    * anchors the IRIs. Uniqueness = (term, language) — upsert is
    * delete-then-create on that identity.
    */
-  @callable('user')
+  @callable('signed-in')
   async listGlossary(data: { appId: string }): Promise<GlossaryTermRecord[]> {
     const actor = this.requireActor();
     await this.requireAccess(actor, { appId: data?.appId }, 'read');
     return listGlossaryTerms(data);
   }
 
-  @callable('user')
+  @callable('signed-in')
   async upsertGlossaryTerm(data: {
     appId: string;
     term: string;
@@ -1845,7 +1845,7 @@ export class TranslationProvider extends ShapeProvider {
     return { id };
   }
 
-  @callable('user')
+  @callable('signed-in')
   async deleteGlossaryTerm(data: { appId: string; id: string }): Promise<{ deleted: boolean }> {
     const actor = this.requireActor();
     await this.requireAccess(actor, data, 'manage');
@@ -1860,7 +1860,7 @@ export class TranslationProvider extends ShapeProvider {
   }
 
   /** History for one (key, language) cell — newest first (Plan 017 AD-P). */
-  @callable('user')
+  @callable('signed-in')
   async listRevisions(data: {
     appId: string;
     key: string;
