@@ -405,7 +405,7 @@ describe('TranslationProvider RPC declarations', () => {
     for (const method of methods) {
       expect([method, getOwnCallableLevel(TranslationProvider, method)]).toEqual([
         method,
-        method === 'getMessages' ? 'public' : 'user',
+        method === 'getMessages' ? 'public' : 'signed-in',
       ]);
     }
     for (const helper of ['requireActor', 'requireAccess']) {
