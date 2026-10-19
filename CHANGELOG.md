@@ -1,5 +1,11 @@
 # @\_linked/translation
 
+## 0.8.2
+
+### Patch Changes
+
+- [#65](https://github.com/linked-fw/translation/pull/65) [`27aae56`](https://github.com/linked-fw/translation/commit/27aae563e787a728b538a4810ebcb62c073ad66b) Thanks [@flyon](https://github.com/flyon)! - A second copy of the package in one runtime now sees what the host set up on the first: the authorization resolver (`configureTranslationAuthorization`), MT providers (`registerMtProvider`), format adapters (`registerTranslationFormatAdapter`) and the `TranslationProvider` context live on `globalThis` through core's `sharedState`. Registering the same format adapter object again is no longer an error; a different adapter for a registered format still is. Requires `@_linked/core` 2.36.0 or later.
+
 ## 0.8.1
 
 ### Patch Changes
