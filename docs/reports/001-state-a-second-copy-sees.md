@@ -12,9 +12,13 @@ A module can be evaluated twice in one runtime: under `linked start` once by Vit
 runner and once by Node, or in a browser when two bundles each carry a copy. Before this change
 each copy of `@_linked/translation` had its own module-level state, so a host that configured one
 copy left the other denying every author, finding no MT provider or format adapter, and rendering
-`useTranslate` consumers without their provider. This follows the convention in linked-fw/cli
+`useTranslate` consumers without their provider. This follows the cross-repo convention in linked-fw/cli
 [shared state and error brands](https://github.com/linked-fw/cli/blob/main/docs/architecture/shared-state-and-error-brands.md)
-(core 2.36.0 `sharedState(pkg, name, init)` on `globalThis[Symbol.for('<pkg>:<name>')]`).
+(core 2.36.0 `sharedState(pkg, name, init)` on `globalThis[Symbol.for('<pkg>:<name>')]`); the
+effort across all framework repos is recorded in linked-fw/cli
+[report 020](https://github.com/linked-fw/cli/blob/main/docs/reports/020-shared-state-and-error-brands.md).
+
+Released in **0.8.2** (patch).
 
 ## What moved
 
@@ -64,3 +68,8 @@ previous source all four fail; with this change all pass. Full suite: 33 files, 
 ## Follow-ups
 
 None for this package. The package defines no error classes, so there is nothing to brand.
+
+## PRs
+
+- https://github.com/linked-fw/translation/pull/62 — backlog 003 recording what a second copy did not see (removed by #65)
+- https://github.com/linked-fw/translation/pull/65 — the change, this report and the two-copies test
