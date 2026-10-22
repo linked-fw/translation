@@ -1,12 +1,11 @@
 import { createNameSpace } from '@_linked/core/utils/NameSpace';
+import { loadOntologyFiles } from '@_linked/core/ontology/loadOntologyFiles';
 
-/** Lazy-load the (currently empty) serialized ontology graph. */
-export var loadData = () => {
-  //@ts-ignore
-  return import('../data/translation.json', { with: { type: 'json' } }).then(
-    (data) => data.default
-  );
-};
+/** The package's ontology data, relative to this module (Turtle, copied into `lib/` by the build). */
+export const dataFiles = ['../data/translation.ttl'];
+
+/** Reads the package's ontology data (server only). */
+export const loadData = () => loadOntologyFiles(import.meta.url, dataFiles);
 
 /**
  * Public ontology namespace for the translation package. First-party Linked
