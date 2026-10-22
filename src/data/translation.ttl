@@ -1,0 +1,489 @@
+@prefix translation: <https://linked.cm/ont/translation/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix schema: <http://schema.org/> .
+
+translation:
+    a owl:Ontology ;
+    dcterms:description "Terms of translation keys, their versions, per-language units, revisions, releases, glossary and inventory."@en ;
+    dcterms:title "Linked translation"@en ;
+    owl:versionInfo "0.8.2" .
+
+translation:GlossaryTerm
+    a owl:Class ;
+    rdfs:comment "A glossary entry that steers machine translation, such as a brand name to keep or a spelling to forbid."@en ;
+    rdfs:label "glossary term"@en .
+
+translation:TranslationInventoryOrigin
+    a owl:Class ;
+    rdfs:comment "One place a branch's translation inventory observed a key, such as a source file line or a shape property."@en ;
+    rdfs:label "translation inventory origin"@en .
+
+translation:TranslationKey
+    a owl:Class ;
+    rdfs:comment "A translatable key, either a UI string (kind ui) or a field of a graph node (kind content), with its canonical English source text."@en ;
+    rdfs:label "translation key"@en .
+
+translation:TranslationKeyVersion
+    a owl:Class ;
+    rdfs:comment "An immutable version of a key's source text and runtime argument contract."@en ;
+    rdfs:label "translation key version"@en .
+
+translation:TranslationLanguage
+    a owl:Class ;
+    rdfs:comment "A language an app is configured for, identified by its BCP-47 tag."@en ;
+    rdfs:label "translation language"@en .
+
+translation:TranslationRelease
+    a owl:Class ;
+    rdfs:comment "Graph metadata of an immutable translation release, whose key and language selection lives in a content-addressed manifest."@en ;
+    rdfs:label "translation release"@en .
+
+translation:TranslationRevision
+    a owl:Class ;
+    rdfs:comment "One append-only authored value for a key and language: a change in its history, a translator's proposal or a machine suggestion."@en ;
+    rdfs:label "translation revision"@en .
+
+translation:TranslationUnit
+    a owl:Class ;
+    rdfs:comment "One language's current value for a translation key, with its review state and provenance."@en ;
+    rdfs:label "translation unit"@en .
+
+translation:argumentSignature
+    a owl:DatatypeProperty ;
+    rdfs:comment "The runtime arguments a key version's message takes."@en ;
+    rdfs:label "argument signature"@en .
+
+translation:author
+    a owl:ObjectProperty ;
+    rdfs:comment "The WebID or machine translation provider that wrote a revision."@en ;
+    rdfs:label "author"@en .
+
+translation:authorKind
+    a owl:DatatypeProperty ;
+    rdfs:comment "Whether a revision was written by a human or a machine."@en ;
+    rdfs:label "author kind"@en .
+
+translation:autoPublish
+    a owl:DatatypeProperty ;
+    rdfs:comment "Whether an edit publishes translations automatically (off by default)."@en ;
+    rdfs:label "auto publish"@en .
+
+translation:basedOnText
+    a owl:DatatypeProperty ;
+    rdfs:comment "The unit's text when a revision was written, to detect conflicts."@en ;
+    rdfs:label "based on text"@en .
+
+translation:branch
+    a owl:ObjectProperty ;
+    rdfs:comment "The branch a translation release was built from."@en ;
+    rdfs:label "branch"@en .
+
+translation:buildId
+    a owl:DatatypeProperty ;
+    rdfs:comment "The identifier of the build a translation release was cut for."@en ;
+    rdfs:label "build id"@en .
+
+translation:caseSensitive
+    a owl:DatatypeProperty ;
+    rdfs:comment "Whether a glossary term matches only with its exact casing."@en ;
+    rdfs:label "case sensitive"@en .
+
+translation:cdnTarget
+    a owl:DatatypeProperty ;
+    rdfs:comment "The base URL or bucket prefix translations are delivered to."@en ;
+    rdfs:label "CDN target"@en .
+
+translation:channel
+    a owl:DatatypeProperty ;
+    rdfs:comment "The delivery channel of a translation release, preview or production."@en ;
+    rdfs:label "channel"@en .
+
+translation:contractHash
+    a owl:DatatypeProperty ;
+    rdfs:comment "The hash of a key version's source text and argument contract."@en ;
+    rdfs:label "contract hash"@en .
+
+translation:contractSetHash
+    a owl:DatatypeProperty ;
+    rdfs:comment "The hash of every key contract a release covers."@en ;
+    rdfs:label "contract set hash"@en .
+
+translation:createdAt
+    a owl:DatatypeProperty ;
+    rdfs:comment "When a key version, release or revision was created."@en ;
+    rdfs:label "created at"@en .
+
+translation:createdBy
+    a owl:ObjectProperty ;
+    rdfs:comment "The WebID that created a key version."@en ;
+    rdfs:label "created by"@en .
+
+translation:currentVersion
+    a owl:ObjectProperty ;
+    rdfs:comment "The key version that is a translation key's current source."@en ;
+    rdfs:label "current version"@en .
+
+translation:decidedAt
+    a owl:DatatypeProperty ;
+    rdfs:comment "When a proposed or suggested revision was accepted or rejected."@en ;
+    rdfs:label "decided at"@en .
+
+translation:decidedBy
+    a owl:ObjectProperty ;
+    rdfs:comment "The WebID of the reviewer who decided a revision."@en ;
+    rdfs:label "decided by"@en .
+
+translation:defaultLanguage
+    a owl:DatatypeProperty ;
+    rdfs:comment "The BCP-47 tag of the app's authored source language."@en ;
+    rdfs:label "default language"@en .
+
+translation:description
+    a owl:DatatypeProperty ;
+    rdfs:comment "A note that tells translators what a key or glossary term means and where it appears."@en ;
+    rdfs:label "description"@en .
+
+translation:englishName
+    a owl:DatatypeProperty ;
+    rdfs:comment "A language's name in English."@en ;
+    rdfs:label "English name"@en .
+
+translation:fallbackLanguage
+    a owl:ObjectProperty ;
+    rdfs:comment "The language whose text is shown when a value is missing in this one."@en ;
+    rdfs:label "fallback language"@en .
+
+translation:format
+    a owl:DatatypeProperty ;
+    rdfs:comment "The message syntax of a key's text, simple or icu."@en ;
+    rdfs:label "format"@en .
+
+translation:fromPackage
+    a owl:DatatypeProperty ;
+    rdfs:comment "The package whose seed catalog supplied a key."@en ;
+    rdfs:label "from package"@en .
+
+translation:glossaryLanguage
+    a owl:DatatypeProperty ;
+    rdfs:comment "The BCP-47 tag of the language a glossary translation is for."@en ;
+    rdfs:label "glossary language"@en .
+
+translation:glossaryTranslation
+    a owl:DatatypeProperty ;
+    rdfs:comment "The required translation of a glossary term."@en ;
+    rdfs:label "glossary translation"@en .
+
+translation:hotfixSequence
+    a owl:DatatypeProperty ;
+    rdfs:comment "The hotfix number of a release on top of its base release."@en ;
+    rdfs:label "hotfix sequence"@en .
+
+translation:inventoryAuthoritative
+    a owl:DatatypeProperty ;
+    rdfs:comment "Whether an inventory origin is the authoritative one for its key."@en ;
+    rdfs:label "inventory authoritative"@en .
+
+translation:inventoryBranch
+    a owl:ObjectProperty ;
+    rdfs:comment "The branch an inventory origin was observed on."@en ;
+    rdfs:label "inventory branch"@en .
+
+translation:inventoryFile
+    a owl:DatatypeProperty ;
+    rdfs:comment "The source file an inventory origin was found in."@en ;
+    rdfs:label "inventory file"@en .
+
+translation:inventoryIdentity
+    a owl:DatatypeProperty ;
+    rdfs:comment "The stable identity of an inventory item across observations."@en ;
+    rdfs:label "inventory identity"@en .
+
+translation:inventoryLine
+    a owl:DatatypeProperty ;
+    rdfs:comment "The line of the source file an inventory origin was found on."@en ;
+    rdfs:label "inventory line"@en .
+
+translation:inventoryNode
+    a owl:ObjectProperty ;
+    rdfs:comment "The IRI of the graph node an inventory origin was found on."@en ;
+    rdfs:label "inventory node"@en .
+
+translation:inventoryObservedAt
+    a owl:DatatypeProperty ;
+    rdfs:comment "When an inventory origin was last observed."@en ;
+    rdfs:label "inventory observed at"@en .
+
+translation:inventoryOwner
+    a owl:ObjectProperty ;
+    rdfs:comment "The IRI of the node that owns an inventory origin."@en ;
+    rdfs:label "inventory owner"@en .
+
+translation:inventoryProperty
+    a owl:ObjectProperty ;
+    rdfs:comment "The IRI of the property an inventory origin was found on."@en ;
+    rdfs:label "inventory property"@en .
+
+translation:inventoryShape
+    a owl:ObjectProperty ;
+    rdfs:comment "The IRI of the shape an inventory origin was found on."@en ;
+    rdfs:label "inventory shape"@en .
+
+translation:inventorySource
+    a owl:DatatypeProperty ;
+    rdfs:comment "The kind of source an inventory origin was found in."@en ;
+    rdfs:label "inventory source"@en .
+
+translation:inventorySourceId
+    a owl:DatatypeProperty ;
+    rdfs:comment "The identifier of the source an inventory origin was found in."@en ;
+    rdfs:label "inventory source id"@en .
+
+translation:inventoryStatus
+    a owl:DatatypeProperty ;
+    rdfs:comment "The status of an inventory origin: confirmed, pending, conflict or orphaned."@en ;
+    rdfs:label "inventory status"@en .
+
+translation:inventoryTargetClass
+    a owl:DatatypeProperty ;
+    rdfs:comment "The target class of the shape an inventory origin was found on, as a literal."@en ;
+    rdfs:label "inventory target class"@en .
+
+translation:key
+    a owl:DatatypeProperty ;
+    rdfs:comment "A translation key's name within its namespace."@en ;
+    rdfs:label "key"@en .
+
+translation:kind
+    a owl:DatatypeProperty ;
+    rdfs:comment "Whether a translation key is a UI string (ui) or a field of a graph node (content)."@en ;
+    rdfs:label "kind"@en .
+
+translation:language
+    a owl:DatatypeProperty ;
+    rdfs:comment "The BCP-47 tag of a unit's or revision's language."@en ;
+    rdfs:label "language"@en .
+
+translation:languageCode
+    a owl:DatatypeProperty ;
+    rdfs:comment "The BCP-47 tag of a configured language."@en ;
+    rdfs:label "language code"@en .
+
+translation:languageEnabled
+    a owl:DatatypeProperty ;
+    rdfs:comment "Whether a configured language is switched on for the app."@en ;
+    rdfs:label "language enabled"@en .
+
+translation:languageIdentifier
+    a owl:ObjectProperty ;
+    rdfs:comment "The IRI that identifies a configured language."@en ;
+    rdfs:label "language identifier"@en .
+
+translation:languageSupported
+    a owl:DatatypeProperty ;
+    rdfs:comment "Whether a language is supported by the app."@en ;
+    rdfs:label "language supported"@en .
+
+translation:languages
+    a owl:DatatypeProperty ;
+    rdfs:comment "A BCP-47 tag the app's translation is active for, the source language included; multi-valued."@en ;
+    rdfs:label "languages"@en .
+
+translation:manifestHash
+    a owl:DatatypeProperty ;
+    rdfs:comment "The hash of a release's content-addressed manifest."@en ;
+    rdfs:label "manifest hash"@en .
+
+translation:mtDefault
+    a owl:DatatypeProperty ;
+    rdfs:comment "The key of the app's default machine translation provider."@en ;
+    rdfs:label "default MT provider"@en .
+
+translation:mtFormality
+    a owl:DatatypeProperty ;
+    rdfs:comment "The formality machine translation uses, for the app (formal) or per language (de:informal); multi-valued."@en ;
+    rdfs:label "MT formality"@en .
+
+translation:mtProvider
+    a owl:DatatypeProperty ;
+    rdfs:comment "The key of the machine translation provider that wrote a revision."@en ;
+    rdfs:label "MT provider"@en .
+
+translation:mtStyleNote
+    a owl:DatatypeProperty ;
+    rdfs:comment "Free-text tone guidance given to LLM machine translation providers."@en ;
+    rdfs:label "MT style note"@en .
+
+translation:namespace
+    a owl:DatatypeProperty ;
+    rdfs:comment "The namespace a translation key belongs to."@en ;
+    rdfs:label "namespace"@en .
+
+translation:nativeName
+    a owl:DatatypeProperty ;
+    rdfs:comment "A language's name in that language."@en ;
+    rdfs:label "native name"@en .
+
+translation:note
+    a owl:DatatypeProperty ;
+    rdfs:comment "A translator's or reviewer's comment on a revision."@en ;
+    rdfs:label "note"@en .
+
+translation:ofApplication
+    a owl:ObjectProperty ;
+    rdfs:comment "The app a translation key, unit, revision, release or inventory record belongs to."@en ;
+    rdfs:label "of application"@en .
+
+translation:ofField
+    a owl:DatatypeProperty ;
+    rdfs:comment "The field (property) of the node a content translation key translates."@en ;
+    rdfs:label "of field"@en .
+
+translation:ofKey
+    a owl:ObjectProperty ;
+    rdfs:comment "The translation key a unit, revision or key version belongs to."@en ;
+    rdfs:label "of key"@en .
+
+translation:ofKeyVersion
+    a owl:ObjectProperty ;
+    rdfs:comment "The key version a unit or revision was written against."@en ;
+    rdfs:label "of key version"@en .
+
+translation:ofNode
+    a owl:ObjectProperty ;
+    rdfs:comment "The graph node whose field a content translation key translates."@en ;
+    rdfs:label "of node"@en .
+
+translation:ofProperty
+    a owl:ObjectProperty ;
+    rdfs:comment "The predicate a package-supplied key is about."@en ;
+    rdfs:label "of property"@en .
+
+translation:ofResource
+    a owl:ObjectProperty ;
+    rdfs:comment "Any other semantic resource a key is about, such as an action, group, condition or port."@en ;
+    rdfs:label "of resource"@en .
+
+translation:ofShape
+    a owl:ObjectProperty ;
+    rdfs:comment "The SHACL shape a package-supplied key is about."@en ;
+    rdfs:label "of shape"@en .
+
+translation:origin
+    a owl:DatatypeProperty ;
+    rdfs:comment "Where a unit's current value came from, such as translation memory (tm)."@en ;
+    rdfs:label "origin"@en .
+
+translation:overridden
+    a owl:DatatypeProperty ;
+    rdfs:comment "Marks a shape key the app changed from its canonical text, so shape propagation leaves it alone."@en ;
+    rdfs:label "overridden"@en .
+
+translation:parentLanguage
+    a owl:ObjectProperty ;
+    rdfs:comment "The broader language a regional language belongs to (de for de-CH)."@en ;
+    rdfs:label "parent language"@en .
+
+translation:publishedAt
+    a owl:DatatypeProperty ;
+    rdfs:comment "When a translation release was published."@en ;
+    rdfs:label "published at"@en .
+
+translation:qualitySummary
+    a owl:DatatypeProperty ;
+    rdfs:comment "A summary of the review state of the values in a release."@en ;
+    rdfs:label "quality summary"@en .
+
+translation:releaseId
+    a owl:DatatypeProperty ;
+    rdfs:comment "The identifier of a translation release."@en ;
+    rdfs:label "release id"@en .
+
+translation:reviewedOnlyLanguage
+    a owl:DatatypeProperty ;
+    rdfs:comment "A BCP-47 tag whose translations are published only once reviewed; multi-valued."@en ;
+    rdfs:label "reviewed-only language"@en .
+
+translation:shapeSource
+    a owl:DatatypeProperty ;
+    rdfs:comment "The canonical source text at the moment a shape key was overridden, which clearing the override restores."@en ;
+    rdfs:label "shape source"@en .
+
+translation:sourceHash
+    a owl:DatatypeProperty ;
+    rdfs:comment "The hash of a key version's source text."@en ;
+    rdfs:label "source hash"@en .
+
+translation:sourceLanguage
+    a owl:DatatypeProperty ;
+    rdfs:comment "The BCP-47 tag of the language a key version's source text is in."@en ;
+    rdfs:label "source language"@en .
+
+translation:sourceText
+    a owl:DatatypeProperty ;
+    rdfs:comment "The canonical English text of a translation key or key version."@en ;
+    rdfs:label "source text"@en .
+
+translation:state
+    a owl:DatatypeProperty ;
+    rdfs:comment "The review state of a translation unit: untranslated, machine, reviewed or stale."@en ;
+    rdfs:label "state"@en .
+
+translation:status
+    a owl:DatatypeProperty ;
+    rdfs:comment "The state of a release (draft, published, superseded, retired) or of a revision (applied, proposed, suggested, accepted, rejected, superseded)."@en ;
+    rdfs:label "status"@en .
+
+translation:supersedes
+    a owl:ObjectProperty ;
+    rdfs:comment "The key version or release this one replaces."@en ;
+    rdfs:label "supersedes"@en .
+
+translation:supportedUntil
+    a owl:DatatypeProperty ;
+    rdfs:comment "Until when a translation release is supported."@en ;
+    rdfs:label "supported until"@en .
+
+translation:term
+    a owl:DatatypeProperty ;
+    rdfs:comment "The source-language term a glossary entry is about."@en ;
+    rdfs:label "term"@en .
+
+translation:termType
+    a owl:DatatypeProperty ;
+    rdfs:comment "How machine translation treats a glossary term: prefer, require, keep or forbid."@en ;
+    rdfs:label "term type"@en .
+
+translation:text
+    a owl:DatatypeProperty ;
+    rdfs:comment "The translated text of a unit or revision."@en ;
+    rdfs:label "text"@en .
+
+translation:textDirection
+    a owl:DatatypeProperty ;
+    rdfs:comment "Whether a language is written left-to-right or right-to-left."@en ;
+    rdfs:label "text direction"@en .
+
+translation:updatedAt
+    a owl:DatatypeProperty ;
+    rdfs:comment "When a translation unit last changed."@en ;
+    rdfs:label "updated at"@en .
+
+translation:updatedBy
+    a owl:ObjectProperty ;
+    rdfs:comment "The WebID that last changed a translation unit."@en ;
+    rdfs:label "updated by"@en .
+
+translation:useInstead
+    a owl:DatatypeProperty ;
+    rdfs:comment "The replacement for a forbidden glossary term or spelling."@en ;
+    rdfs:label "use instead"@en .
+
+translation:versionId
+    a owl:DatatypeProperty ;
+    rdfs:comment "The identifier of a translation key version."@en ;
+    rdfs:label "version id"@en .

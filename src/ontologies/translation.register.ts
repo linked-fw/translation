@@ -11,7 +11,7 @@
  * From a sibling module the same import is ordinary and survives.
  */
 import * as terms from './translation.js';
-import {ns} from './translation.js';
+import {dataFiles, loadData, ns} from './translation.js';
 import {linkedOntology} from '../package.js';
 
-linkedOntology(terms, ns, 'translation');
+linkedOntology(terms, ns, 'translation', loadData, dataFiles);
