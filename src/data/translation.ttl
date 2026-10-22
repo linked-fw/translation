@@ -11,7 +11,7 @@ translation:
     a owl:Ontology ;
     dcterms:description "Terms of translation keys, their versions, per-language units, revisions, releases, glossary and inventory."@en ;
     dcterms:title "Linked translation"@en ;
-    owl:versionInfo "0.8.2" .
+    owl:versionInfo "0.9.0" .
 
 translation:GlossaryTerm
     a owl:Class ;
