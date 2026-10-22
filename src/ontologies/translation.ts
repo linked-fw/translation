@@ -1,13 +1,6 @@
 import { createNameSpace } from '@_linked/core/utils/NameSpace';
 
 /** Lazy-load the (currently empty) serialized ontology graph. */
-export var loadData = () => {
-  //@ts-ignore
-  return import('../data/translation.json', { with: { type: 'json' } }).then(
-    (data) => data.default
-  );
-};
-
 /**
  * Public ontology namespace for the translation package. First-party Linked
  * ontologies live at `https://linked.cm/ont/{ontologySlug}/{localName}`, where

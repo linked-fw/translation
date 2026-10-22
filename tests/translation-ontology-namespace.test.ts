@@ -13,7 +13,8 @@ import {
   TranslationKey,
   TranslationUnit,
 } from '../src/ontologies/translation.js';
-import data from '../src/data/translation.json';
+import { Prefix } from '@_linked/core/utils/Prefix';
+import '../src/ontologies/translation.register.js';
 
 const NAMESPACE = 'https://linked.cm/ont/translation/';
 
@@ -30,8 +31,8 @@ describe('translation ontology namespace', () => {
     expect(tr.ofResource).toBe(ofResource);
   });
 
-  it('uses the package slug as the JSON-LD prefix label', () => {
-    expect(data['@context']).toMatchObject({ translation: NAMESPACE });
-    expect(data['@context']).not.toHaveProperty('tr');
+  it('registers the package slug as the prefix label', () => {
+    expect(Prefix.getFullURI('translation')).toBe(NAMESPACE);
+    expect(Prefix.toPrefixed(TranslationKey.id)).toBe('translation:TranslationKey');
   });
 });
