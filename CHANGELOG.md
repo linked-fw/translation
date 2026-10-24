@@ -1,5 +1,11 @@
 # @\_linked/translation
 
+## 0.9.1
+
+### Patch Changes
+
+- [#71](https://github.com/linked-fw/translation/pull/71) [`49c3180`](https://github.com/linked-fw/translation/commit/49c3180e1c39b5260322ccc946dd3f99a03a9073) Thanks [@flyon](https://github.com/flyon)! - Ships `lib/esm/data/shapes.ttl`; core range raised.
+
 ## 0.9.0
 
 ### Minor Changes
