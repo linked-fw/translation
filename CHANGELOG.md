@@ -1,5 +1,11 @@
 # @\_linked/translation
 
+## 0.9.2
+
+### Patch Changes
+
+- [#73](https://github.com/linked-fw/translation/pull/73) [`6ccca00`](https://github.com/linked-fw/translation/commit/6ccca0062c07ea5328ff022b91ba5592659091d3) Thanks [@flyon](https://github.com/flyon)! - The translation shapes take their `xsd` datatypes from `@_linked/xsd/ontologies/xsd` (the vocabulary package, now a dependency) instead of core's internal `@_linked/core/ontologies/xsd` module. `@_linked/core` range raised to ^2.41.0, which `@_linked/xsd` needs.
+
 ## 0.9.1
 
 ### Patch Changes
