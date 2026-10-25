@@ -7,7 +7,7 @@
   "type": "module",
   "main": "lib/esm/index.js",
   "types": "index.d.ts",
-  "license": "ISC",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/linked-fw/translation.git"
@@ -18,7 +18,8 @@
   },
   "files": [
     "lib",
-    "src"
+    "src",
+    "LICENSE"
   ],
   "publishConfig": {
     "access": "public"
