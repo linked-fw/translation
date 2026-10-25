@@ -1,5 +1,11 @@
 # @\_linked/translation
 
+## 0.9.3
+
+### Patch Changes
+
+- [#75](https://github.com/linked-fw/translation/pull/75) [`3df762b`](https://github.com/linked-fw/translation/commit/3df762b91758bde9b8f8d5607e847235a7d93989) Thanks [@flyon](https://github.com/flyon)! - License: MIT (data under its original license)
+
 ## 0.9.2
 
 ### Patch Changes
