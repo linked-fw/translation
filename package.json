@@ -1,7 +1,7 @@
 {
   "name": "@_linked/translation",
   "description": "LINKED translation management — graph-native i18n keys + units, Tolgee-compatible client, CDN delivery.",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "packageManager": "npm@12.2.0",
   "linkedPackage": true,
   "type": "module",
