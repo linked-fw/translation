@@ -1,5 +1,11 @@
 # @\_linked/translation
 
+## 0.9.4
+
+### Patch Changes
+
+- [#80](https://github.com/linked-fw/translation/pull/80) [`b2f6653`](https://github.com/linked-fw/translation/commit/b2f665397eb517b1df460ae6a3a9f2c29aa190c1) Thanks [@flyon](https://github.com/flyon)! - `package.json` says what this package is in `"linked": {"kind": "library"}` instead of `"linkedPackage": true`, which the CLI and server no longer read.
+
 ## 0.9.3
 
 ### Patch Changes
