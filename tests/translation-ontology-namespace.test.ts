@@ -1,7 +1,7 @@
 /**
  * The translation ontology follows the first-party namespace rule:
  * `https://linked.cm/ont/{ontologySlug}/{localName}`, with the package's public
- * slug as both the ontology slug and the prefix label.
+ * slug as both the ontology slug and the prefix its data suggests.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -14,7 +14,8 @@ import {
   TranslationUnit,
 } from '../src/ontologies/translation.js';
 import { Prefix } from '@_linked/core/utils/Prefix';
-import '../src/ontologies/translation.register.js';
+import { suggestedPrefixes } from '@_linked/core/utils/Package';
+import '../src/ontologies/index.js';
 
 const NAMESPACE = 'https://linked.cm/ont/translation/';
 
@@ -31,8 +32,11 @@ describe('translation ontology namespace', () => {
     expect(tr.ofResource).toBe(ofResource);
   });
 
-  it('registers the package slug as the prefix label', () => {
-    expect(Prefix.getFullURI('translation')).toBe(NAMESPACE);
-    expect(Prefix.toPrefixed(TranslationKey.id)).toBe('translation:TranslationKey');
+  it('suggests the package slug as its prefix and registers none', () => {
+    expect(suggestedPrefixes().filter((p) => p.packageName === '@_linked/translation')).toEqual([
+      { packageName: '@_linked/translation', name: 'translation', namespace: NAMESPACE, prefix: 'translation' },
+    ]);
+    expect(Prefix.getFullURI('translation')).toBeUndefined();
+    expect(Prefix.toPrefixed(TranslationKey.id, { translation: NAMESPACE })).toBe('translation:TranslationKey');
   });
 });
