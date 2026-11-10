@@ -601,7 +601,7 @@ function rootMetadata(document: TranslationExchangeDocument): string {
 function validatedMixedContent(value: string, inline: Set<string>): string {
   if (!value.includes('<')) return escapeText(value);
   try {
-    const wrapper = parseXml(`<cn-wrapper>${value}</cn-wrapper>`);
+    const wrapper = parseXml(`<lt-wrapper>${value}</lt-wrapper>`);
     const nodes = wrapper.children.filter(
       (child): child is XmlNode => typeof child !== 'string',
     );

@@ -85,7 +85,7 @@
 
 ### Minor Changes
 
-- [#53](https://github.com/linked-fw/translation/pull/53) [`9e0cb06`](https://github.com/linked-fw/translation/commit/9e0cb0633973882747c764a748c7adccb26e2959) Thanks [@flyon](https://github.com/flyon)! - **Breaking:** shape and package IRIs move to the public first-party rule (Create Now arch-02).
+- [#53](https://github.com/linked-fw/translation/pull/53) [`9e0cb06`](https://github.com/linked-fw/translation/commit/9e0cb0633973882747c764a748c7adccb26e2959) Thanks [@flyon](https://github.com/flyon)! - **Breaking:** shape and package IRIs move to the public first-party rule.
   The package no longer passes a `baseUri`, so `@_linked/core`'s default root applies:
   
   - shapes: `https://id.linked.cm/translation/shape/translation/{ShapeName}` → `https://linked.cm/shape/translation/{ShapeName}` (e.g. `https://linked.cm/shape/translation/TranslationKey`)
@@ -165,7 +165,7 @@
   The declared range was wide enough that the resolved core depended on whatever the
   consumer — or this repo's own CI, via `package-lock.json` — happened to install. Core
   decides how a shape's IRI is minted, so a stale core made this package emit legacy
-  `data.lincd.org` IRIs instead of the arch-02 `linked.cm` scheme. Which IRIs a published
+  `data.lincd.org` IRIs instead of the public `linked.cm` scheme. Which IRIs a published
   package produces should not be a function of the installer's dependency tree.
 
   Minor rather than patch: this raises the minimum core a consumer must resolve, so it
@@ -175,7 +175,7 @@
 
 ### Minor Changes
 
-- [#18](https://github.com/linked-fw/translation/pull/18) [`394e4eb`](https://github.com/linked-fw/translation/commit/394e4ebe025f6f69cce7cdf2d1a77c106a89af01) Thanks [@flyon](https://github.com/flyon)! - Exchange formats now carry neutral, framework-level identifiers instead of Create Now's name.
+- [#18](https://github.com/linked-fw/translation/pull/18) [`394e4eb`](https://github.com/linked-fw/translation/commit/394e4ebe025f6f69cce7cdf2d1a77c106a89af01) Thanks [@flyon](https://github.com/flyon)! - Exchange formats now carry neutral, framework-level identifiers instead of a host app's name.
 
   The package is portable; its public wire formats should not be branded with one host
   product. What writers emit changes as follows:
@@ -256,9 +256,8 @@
 - [#9](https://github.com/linked-fw/translation/pull/9) [`1ef9ac0`](https://github.com/linked-fw/translation/commit/1ef9ac0097174844fd33cba3d4b67206bc851d8b) Thanks [@flyon](https://github.com/flyon)! - Fix the root type entry under Node10 module resolution. `types` was `./lib/esm/index.d.ts`, which
   `typesVersions` then re-matched against its `*` pattern and rewrote to `lib/esm/lib/esm/index.d.ts`
   — a path that does not exist. Subpath imports resolved (they have no prefix to double), so only
-  the bare `@_linked/translation` import failed, with `TS2307: Cannot find module`. Create Now
-  resolves with `moduleResolution: node`, so every root import of this package was unresolvable
-  there. Now `index.d.ts`, matching `@_linked/core`, which `typesVersions` maps correctly.
+  the bare `@_linked/translation` import failed, with `TS2307: Cannot find module`. A host app
+  that resolves with `moduleResolution: node` could not resolve any root import of this package. Now `index.d.ts`, matching `@_linked/core`, which `typesVersions` maps correctly.
 
 ## 0.2.1
 
