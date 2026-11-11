@@ -15,7 +15,7 @@ CN currently visits every distinct default-slot physical store once within each 
 
 ## Current coordinator authorization — 2026-11-11
 
-The root coordinator has now authorized this package's isolated source preparation/implementation through pinned Cursor CLI Grok4.7Low only (`grok-4.7-low`, sandbox enabled, auto-update disabled, actual HOME/Node24). One source worker at a time in this repo; max two concurrent source workers across different repos is explicitly allowed. This supersedes the initial plan-only hold, not the independent review/publication gates. Coordinator agents do not hand-edit product code. No source commit/Changeset/PR/push/publish is authorized yet; only plan documentation commits precede workers.
+The root coordinator has now authorized this package's isolated source preparation/implementation through pinned Cursor CLI Grok4.7Low only (`grok-4.7-low`, sandbox enabled, auto-update disabled, actual HOME/Node24). One source worker at a time in this repo; max two concurrent source workers across different repos is explicitly allowed. This supersedes the initial plan-only hold, not the independent review/publication gates. Coordinator agents do not hand-edit product code. Root authorized the accepted local phase commits and subsequent qualification/release-preparation commits. Feature branch push and a draft upstream PR are now separately authorized after final evidence review; no merge, manual version bump or publication is authorized.
 
 **Phase1A source GO:** ONLY `src/shapes/TranslationProvider.ts` plus focused typed tests (`tests/translation-version-writes.test.ts` and optional new `tests/translation-execution-dataset.test.ts`). Export TranslationExecutionOptions, add third upsert option and snapshot dataset once; thread it through private key-version read/create/ensure and all key/currentVersion/stale-unit queries. Existing no-option callers/default errors/dispatch must stay unchanged; do not add an implicit current dataset override, skip policy, unit/revision/release public options, auth change or another production file. Only this first subphase is source-authorized now. Worker performs no tests/shell/network/services/commits; coordinator freezes exact output, runs own focused unit/type checks, and obtains fresh independent review before accepting.
 
@@ -42,6 +42,14 @@ Shape-copy operations now snapshot the optional dataset once and retain it throu
 Actual own Node24.22/Core2.47 gates:35/35 focused tests (800ms runner/1.143s process), narrow test semantic types0errors729ms; unchanged production source package no-emit0errors0.983s. Separate-context review ran8 fresh paired groups using actual Core builders and explicitly scripted transport, with no confirmed P1/P2. Root accepted the bounded component; report005 records exact source/test hashes and limits. These are not successful RDF/inference/staling claims.
 
 Root authorized the local Phase1B commit and planned Phase2: own build/emitted public JS+d.ts consumer qualification, full package suite and real inferring-store controls. Audit lifecycle/test endpoints first. Use only owned labelled infrastructure/unique datasets and a free nonoverlapping port/subnet; no shared/owner3030 or PG42421/49422/63059. Product integration tests remain scoped source-worker edits; source Phase1 remains frozen absent a concrete finding. Fresh independent Phase2 review and separate release approval remain required; no Changeset, push, PR or publication is authorized.
+
+### Phase2 complete; release preparation authorized
+
+Unchanged accepted source passed normal build4.618s/all31 public subpaths and full35files410tests4.684s. Actual packed public JS/declaration consumers compile old/new calls and reject4invalid option controls;80emitted JS/declaration files match installation. A separate normal consumer has one physical/runtime Core2.47 with Fuseki3.9.2/server-utils1.17/xsd1.4.4, not a localized dependency in this package.
+
+Real inferring-store validation passed13persisted groups4.994s plus3neighbors0.316s: selected versions/current pointers/supersedes/stale effects, backfill/default behavior, override/clear snapshot removal, language/canonical controls, first-read versus all later failures and concurrent target/policy snapshots. Separate-context fresh review passed5persisted groups1.387s/105requests with no confirmed P1/P2 (reportSHAff4f9a3b6514ed0342ed87895ad187413f83adf3fc9085e3f29f35b5171acf71). Inference was proved against stored-only data. Successful queries used the actual engine; injected faults do not imply rollback.
+
+Only owned labelled container/network/volumes on loopback49432 were removed after review completion; port is free, generated test credentials removed, all evidence sealed. Initial internal-network port failure is preserved as fixture-only evidence. Source/manifest/lock and canonical checkout stayed unchanged. Root accepted Phase2 locally and authorized its docs/evidence commit, then a minimal minor Changeset/release-preparation phase and draft upstream PR. No merge/publication/manual version bump or downstream adoption is authorized; publication remains the CN prerequisite.
 
 ## Exact additive public contracts
 
@@ -100,7 +108,7 @@ When and only when captured skipInitialKeyReadFailure is true, isolate its FIRST
 
 ### Phase1 — bounded source implementation and paired unit tests
 
-Progress: Phase1A and Phase1B locally accepted (reports004–005); source phases complete within direct-dataset/transport test limits. Phase2 build/public consumers/full suite/real inferring-store qualification is now coordinator-authorized and pending.
+Progress: Phase1A and Phase1B locally accepted (reports004–005); source phases complete within direct-dataset/transport test limits. Phase2 build/public consumers/full suite/real inferring-store qualification is complete and independently reviewed (report006). Phase3 minor Changeset and draft upstream review preparation are authorized next; package/lock remain0.10.0.
 
 Worker reads full two production files plus immediate query/version helpers and existing shape-copy/version-write tests. Implement the exact public contracts and threading above; no package/lock/Core/auth edits. Update existing mocks to model legitimate builders with exec where required, not production fixture carveouts. Keep public output/argument compatibility; consumers with no options compile unchanged.
 
