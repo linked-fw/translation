@@ -25,6 +25,16 @@ Source jobs are bounded at300s, use a separate chat for this repo, exact project
 
 Baseline install qualification is complete: normal own npm ci53.188s/457 packages; Node24.22/npm11.19.1 (manifest packageManager12.2, not claimed qualified), actual one Core2.47 physical/loaded copy; locked graph intact. Existing two focused files21/21 pass, native modules and published0.10 API/consumer checks pass. Source, manifest and lock unchanged; own real node_modules/private cache only. Details remain in coordinator evidence, not copied private logs in the repo. Real inferring-store/new output/build/fullsuite remain pending.
 
+### Phase1A checkpoint — root acceptance pending
+
+Cursor/Grok-only output is frozen as Provider `2ff6feaea08f8ea9249c3c618b37598eb6207781ab716eacedd340e42d791ed1` plus six typed tests `7c3dbf2727d349661eacf635b0d47f967a2c83c2aa6a4ccfc963255ba2cf155d`; candidate manifest `8e5ba3a10cf9dee6b46b15272a8a4da0bcb9b4368a7f2b58f70923d07f106b98`. Existing test files, other production source, package and lock remain unchanged. Coordinator made no direct product edits.
+
+Actual own Node24.22/Core2.47/Vitest5.1 gates: focused3files27/27 pass (818ms runner/1.236s process), package no-emit typecheck0errors1.019s, narrow newtest semantic types0errors655ms. Independent separate-context Provider review has15 fresh paired groupsPASS0.660s,0fetch attempts and no P1/P2/P3 production finding (reportSHA `acfbb774b64769d7fe7784db5e9edd3111749dfa31318330df9d71b7d4ccd1d0`). Original default behavior/error wrapping, option getter/snapshot mutation, target isolation, nested version/backfill/pointer and refusal/no-fallback paths were checked against original source.
+
+The actual InMemoryDataset refuses bulk where UPDATE. Tests assert that genuine selected-target refusal and absence of global fallback; successful persisted stale-unit effect remains the required real inferring-store gate. Unit fixtures now use the existing public upsertTranslationUnit in serial isolated setup, restoring sentinel in finally before target/concurrent assertions; no model/type/cast/unit-writer API expansion. Earlier read-only timeout, fixture/type failures and approval-stop outputs stay preserved. Fresh explicit user permission now covers relevant private source/tests/context to Cursor/Grok while excluding secrets, credentials, env files and real user data. All current external workers have exited and only the matching temporary project policy was removed.
+
+Root must review this checkpoint before Phase1B/source commit. Shape-key-copies/list/clear skip-option work has not begun. No new emitted JS/d.ts/public artifact, full suite, real-store successful staling, release, Changeset, source commit, PR/push/publication or completed CN handoff is claimed by these quick gates.
+
 ## Exact additive public contracts
 
 Define/export the execution type beside TranslationKeyWriteContext in the already public shapes/TranslationProvider subpath; shape-key-copies imports/re-exports the type as needed without moving code to an isomorphic root barrel.
