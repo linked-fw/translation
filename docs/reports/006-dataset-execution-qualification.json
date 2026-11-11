@@ -1,0 +1,68 @@
+{
+  "scope": "accepted local emitted-public/full-package/real-store qualification",
+  "sourceHead": "265181184d4157196dbf6e32f2bdf8b40d8282fa",
+  "source": {
+    "src/shapes/TranslationProvider.ts": "2ff6feaea08f8ea9249c3c618b37598eb6207781ab716eacedd340e42d791ed1",
+    "src/shape-key-copies.ts": "3e472918c901741195a3968895ced7af40b2147fc17b0de5dface0dbad3d30e6"
+  },
+  "manifestSHA256": "1d3b6633e1cf6fb618dfab1c86bf9559bb0f96176d9fa2b9194a3b69fabf37fa",
+  "lockSHA256": "f3a2a59f9711440ab9f5fa33de3a0330a4a108b057965c5cbb20ad230aa4dd92",
+  "build": {
+    "exitCode": 0,
+    "seconds": 4.618,
+    "publicSubpaths": 31
+  },
+  "fullTests": {
+    "files": 35,
+    "passed": 410,
+    "failed": 0,
+    "processSeconds": 4.684,
+    "runnerSeconds": 3.82,
+    "includesEarlierFocusedTests": true
+  },
+  "publicPackedConsumer": {
+    "matchedJSAndDeclarationFiles": 80,
+    "oldAndNewCallsCompile": true,
+    "invalidOptionDiagnostics": 4,
+    "seconds": 0.537
+  },
+  "store": {
+    "image": "ghcr.io/linked-fw/fuseki@sha256:780537ec5156a044cb08af21b357e057378f6bc86b69a1b53bd23a8f2bd28780",
+    "inferring": true,
+    "storedOnlyPairedControl": true,
+    "coordinatorPersistedGroups": 13,
+    "coordinatorNeighborGroups": 3,
+    "independentGroups": 5,
+    "coordinatorSeconds": 4.994,
+    "neighborSeconds": 0.316,
+    "independentMilliseconds": 1386.761,
+    "independentActualRequests": 105,
+    "externalRuntimeAttempts": 0,
+    "coreVersion": "2.47.0",
+    "physicalAndRuntimeCoreCopies": 1,
+    "fusekiVersion": "3.9.2",
+    "ownLoopbackOnly": true,
+    "cleanupComplete": true,
+    "noRollbackClaim": true
+  },
+  "evidence": {
+    "coordinatorReviewSHA256": "e6e25fbe43120ccc39451f0ae668a1124f87f22a9995a293296be4355a5ab198",
+    "coordinatorArtifactIndexSHA256": "be180e081583ec41b2e6033c4ad3feb242c92bfbabe2386a438e500b0da931f1",
+    "independentReviewSHA256": "ff4f9a3b6514ed0342ed87895ad187413f83adf3fc9085e3f29f35b5171acf71",
+    "independentIndexSHA256": "281af26858117f2dca3a53ab2dec53726bd0d1fa09c9df5a289a184fc3f37241"
+  },
+  "commands": [
+    "npm run build",
+    "npm test",
+    "node <qualified TypeScript>/bin/tsc -p <public consumer>/tsconfig.json",
+    "node <public consumer>/persisted.mjs",
+    "node <public consumer>/neighbors.mjs"
+  ],
+  "limits": [
+    "faults injected at real transport boundary; no rollback promise",
+    "package store selection is not authorization",
+    "publication/downstream adoption separate",
+    "initial owned internal-network port failure retained"
+  ],
+  "privateCredentialsLogsOrRuntimeConfigurationIncluded": false
+}

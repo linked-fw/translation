@@ -1,3 +1,4 @@
+import type { IDataset } from '@_linked/core/interfaces/IDataset';
 import { ShapeProvider } from '@_linked/server-utils/utils/ShapeProvider';
 import { callable, internal } from '@_linked/server-utils/utils/callable';
 import type {
@@ -62,6 +63,10 @@ export interface TranslationKeyWriteContext {
    * (answering `preservedOverride: true`). Anything else is an app edit.
    */
   source?: 'app-edit' | 'declaration-sync';
+}
+/** Trusted in-process execution target. Omitted dataset keeps global dispatch. */
+export interface TranslationExecutionOptions {
+  readonly dataset?: IDataset;
 }
 export interface TranslationKeyWriteResult {
   id: string;
@@ -748,8 +753,9 @@ function revisionIri(keyVersionId: string, language: string): string {
 
 async function readKeyVersion(
   id: string,
+  dataset?: IDataset,
 ): Promise<TranslationKeyVersionRecord | null> {
-  const row = await TranslationKeyVersion.select((v) => [
+  const query = TranslationKeyVersion.select((v) => [
     v.versionId,
     v.sourceLanguage,
     v.sourceText,
@@ -762,8 +768,8 @@ async function readKeyVersion(
     v.createdBy,
   ])
     .where((v) => v.equals({ id } as any))
-    .one()
-    .catch(() => null);
+    .one();
+  const row = await (dataset ? query.exec(dataset) : query).catch(() => null);
   return row ? toKeyVersionRecord(row as any) : null;
 }
 
@@ -776,7 +782,7 @@ async function createTranslationKeyVersion(input: {
   supersedes?: string;
   createdBy?: string;
   backfill?: boolean;
-}): Promise<TranslationKeyVersionRecord> {
+}, dataset?: IDataset): Promise<TranslationKeyVersionRecord> {
   const derived = input.backfill
     ? await deriveBackfillKeyVersion(input)
     : {
@@ -785,7 +791,7 @@ async function createTranslationKeyVersion(input: {
       };
   const id = versionIri(input.keyId, derived.versionId);
   const createdAt = new Date().toISOString();
-  await TranslationKeyVersion.create({
+  const created = TranslationKeyVersion.create({
     __id: id,
     ofApplication: { id: input.appId },
     ofKey: { id: input.keyId },
@@ -800,6 +806,7 @@ async function createTranslationKeyVersion(input: {
     createdAt: new Date(createdAt),
     createdBy: input.createdBy ? { id: input.createdBy } : undefined,
   } as any);
+  await (dataset ? created.exec(dataset) : created);
   return {
     id,
     ...derived,
@@ -817,19 +824,20 @@ async function ensureCurrentKeyVersion(input: {
   sourceText: string;
   format: 'simple' | 'icu';
   createdBy?: string;
-}): Promise<TranslationKeyVersionRecord> {
+}, dataset?: IDataset): Promise<TranslationKeyVersionRecord> {
   const currentId = iri(input.currentVersion);
   if (currentId) {
-    const current = await readKeyVersion(currentId);
+    const current = await readKeyVersion(currentId, dataset);
     if (current) return current;
   }
   const initial = await createTranslationKeyVersion({
     ...input,
     backfill: true,
-  });
-  await TranslationKey.update({
+  }, dataset);
+  const pointer = TranslationKey.update({
     currentVersion: { id: initial.id },
   } as any).for({ id: input.keyId } as any);
+  await (dataset ? pointer.exec(dataset) : pointer);
   return initial;
 }
 
@@ -1085,7 +1093,9 @@ export async function decideTranslationProposal(
 export async function upsertTranslationKey(
   data: TranslationKeyInput,
   authorship: TranslationKeyWriteContext = {},
+  execution?: TranslationExecutionOptions,
 ): Promise<TranslationKeyWriteResult> {
+  const dataset = execution?.dataset;
   const appId = requireText(data.appId, 'appId');
   const key = requireText(data.key, 'key');
   requireText(data.sourceText, 'sourceText');
@@ -1107,7 +1117,7 @@ export async function upsertTranslationKey(
     format: data.format ?? 'simple',
   } as any;
   // No catch: a failed read is not permission to create or overwrite the key.
-  const existing = await TranslationKey.select((k) => [
+  const existingQuery = TranslationKey.select((k) => [
     k.sourceText,
     k.format,
     k.ofShape,
@@ -1119,6 +1129,7 @@ export async function upsertTranslationKey(
   ])
     .where((k) => k.equals({ id } as any))
     .one();
+  const existing = await (dataset ? existingQuery.exec(dataset) : existingQuery);
   if (existing) {
     const sourceChanged = (existing as any).sourceText !== data.sourceText;
     const formatChanged =
@@ -1168,7 +1179,7 @@ export async function upsertTranslationKey(
       sourceText: (existing as any).sourceText ?? '',
       format: (existing as any).format === 'icu' ? 'icu' : 'simple',
       createdBy: authorship.createdBy,
-    });
+    }, dataset);
     const decision = classifyKeyVersion(currentVersion, {
       sourceText: data.sourceText,
       format: data.format ?? 'simple',
@@ -1184,7 +1195,7 @@ export async function upsertTranslationKey(
             format: data.format ?? 'simple',
             supersedes: currentVersion.id,
             createdBy: authorship.createdBy,
-          })
+          }, dataset)
         : currentVersion;
     values.currentVersion = { id: nextVersion.id };
     // In the Linked mutation DSL an explicitly present `undefined` removes
@@ -1194,11 +1205,13 @@ export async function upsertTranslationKey(
     const patch = Object.fromEntries(
       Object.entries(values).filter(([, value]) => value !== undefined)
     );
-    await TranslationKey.update(patch as any).for({ id } as any);
+    const written = TranslationKey.update(patch as any).for({ id } as any);
+    await (dataset ? written.exec(dataset) : written);
     if (decision.action === 'create-version') {
-      await TranslationUnit.update({ state: 'stale' } as any).where((u) =>
+      const stale = TranslationUnit.update({ state: 'stale' } as any).where((u) =>
         u.ofKey.equals({ id } as any),
       );
+      await (dataset ? stale.exec(dataset) : stale);
     }
     return {
       id,
@@ -1206,7 +1219,8 @@ export async function upsertTranslationKey(
       versionCreated: decision.action === 'create-version',
     };
   }
-  await TranslationKey.create({ __id: id, ...values });
+  const createdKey = TranslationKey.create({ __id: id, ...values });
+  await (dataset ? createdKey.exec(dataset) : createdKey);
   const firstVersion = await createTranslationKeyVersion({
     appId,
     keyId: id,
@@ -1214,10 +1228,11 @@ export async function upsertTranslationKey(
     sourceText: data.sourceText,
     format: data.format ?? 'simple',
     createdBy: authorship.createdBy,
-  });
-  await TranslationKey.update({
+  }, dataset);
+  const pointer = TranslationKey.update({
     currentVersion: { id: firstVersion.id },
   } as any).for({ id } as any);
+  await (dataset ? pointer.exec(dataset) : pointer);
   return { id, versionId: firstVersion.id, versionCreated: true };
 }
 

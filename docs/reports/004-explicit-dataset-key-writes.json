@@ -1,0 +1,54 @@
+{
+  "scope": "accepted local Phase1A source checkpoint",
+  "baseline": "91e805e7b88022e4113df130cc61ec0beb1a7a5e",
+  "source": {
+    "src/shapes/TranslationProvider.ts": "2ff6feaea08f8ea9249c3c618b37598eb6207781ab716eacedd340e42d791ed1",
+    "tests/translation-execution-dataset.test.ts": "7c3dbf2727d349661eacf635b0d47f967a2c83c2aa6a4ccfc963255ba2cf155d"
+  },
+  "toolchain": {
+    "node": "24.22.0",
+    "npm": "11.19.1",
+    "declaredPackageManager": "npm@12.2.0",
+    "core": "2.47.0",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0",
+    "physicalCoreCopies": 1
+  },
+  "focused": {
+    "files": 3,
+    "passed": 27,
+    "failed": 0,
+    "runnerMs": 818,
+    "processSeconds": 1.236
+  },
+  "packageTypes": {
+    "diagnostics": 0,
+    "seconds": 1.019
+  },
+  "testTypes": {
+    "diagnostics": 0,
+    "milliseconds": 655
+  },
+  "independent": {
+    "pairedGroups": [
+      15,
+      8
+    ],
+    "noConfirmedSourceFindings": true,
+    "reviewSha256": "acfbb774b64769d7fe7784db5e9edd3111749dfa31318330df9d71b7d4ccd1d0",
+    "otherReviewManifestSha256": "4ac3ef7bd050566c269886c1777c0abdff7a84a17ec77d04c95a0f8133e826f8"
+  },
+  "commands": {
+    "focused": "node node_modules/vitest/vitest.mjs run tests/translation-shape-key-copies.test.ts tests/translation-version-writes.test.ts tests/translation-execution-dataset.test.ts",
+    "packageTypes": "node node_modules/typescript/bin/tsc -p tsconfig-esm.json --noEmit",
+    "testTypes": "TypeScript.createProgram using tsconfig-esm options, noEmit, explicit test root, rootDir omitted"
+  },
+  "pending": [
+    "Phase1B shape-key operations",
+    "successful real-store bulk stale effect",
+    "emitted JS/declarations/public consumers",
+    "full package suite/build",
+    "release approval"
+  ],
+  "privateLogsOrRuntimeConfigurationIncluded": false
+}

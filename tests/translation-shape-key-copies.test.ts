@@ -2,8 +2,18 @@
  * Shape keys across apps: what the operations read, and which key writes they make. The writes
  * themselves are `upsertTranslationKey` (versioning and unit staling are its own, tested in
  * translation-version-writes); here it is a spy, and the reads answer fixed rows.
+ *
+ * Transport-spy scope: the select/update doubles are lazy thenables with `exec(target)`. A real
+ * `InMemoryDataset` refuses the nested unit read these queries use, so this file does not claim
+ * store execution. That check is a later real-store gate.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { IDataset } from '@_linked/core/interfaces/IDataset';
+import type { CreateQuery } from '@_linked/core/queries/CreateQuery';
+import type { CreateResult, GraphQuery, GraphResult, UpdateResult } from '@_linked/core/queries/IntermediateRepresentation';
+import type { DeleteQuery, DeleteResponse } from '@_linked/core/queries/DeleteQuery';
+import type { ReadQuery, ReadResult } from '@_linked/core/queries/readQuery';
+import type { UpdateQuery } from '@_linked/core/queries/UpdateQuery';
 
 vi.mock('../src/shapes/TranslationProvider.js', () => ({
   upsertTranslationKey: vi.fn(async () => ({ id: 'k', versionId: 'v', versionCreated: true })),
@@ -39,8 +49,61 @@ const copyRow = (name: string, extra: Record<string, unknown> = {}) => ({
 let keyRows: Array<Record<string, unknown>>;
 let unitRows: Array<Record<string, unknown>>;
 let keyWhere: ReturnType<typeof vi.fn>;
+let unitWhere: ReturnType<typeof vi.fn>;
 let keyUpdate: ReturnType<typeof vi.fn>;
 let keyUpdateFor: ReturnType<typeof vi.fn>;
+let keyExecTargets: IDataset[];
+let unitExecTargets: IDataset[];
+let snapshotExecTargets: IDataset[];
+let keyFailure: Error | undefined;
+let unitFailure: Error | undefined;
+let snapshotFailure: Error | undefined;
+let releaseKeyRead: () => void;
+let keyGate: Promise<void> | undefined;
+
+/** Identity-only dataset. The spies record it; they never call its query methods. */
+class TargetDataset implements IDataset {
+  constructor(readonly label: string) {}
+  readQuery<Q extends ReadQuery>(_query: Q): Promise<ReadResult<Q>> {
+    return Promise.reject(new Error(this.label));
+  }
+  updateQuery(_query: UpdateQuery): Promise<UpdateResult> {
+    return Promise.reject(new Error(this.label));
+  }
+  createQuery(_query: CreateQuery): Promise<CreateResult> {
+    return Promise.reject(new Error(this.label));
+  }
+  deleteQuery(_query: DeleteQuery): Promise<DeleteResponse> {
+    return Promise.reject(new Error(this.label));
+  }
+  graphQuery(_query: GraphQuery): Promise<GraphResult> {
+    return Promise.reject(new Error(this.label));
+  }
+}
+
+interface LazyQuery {
+  exec(target: IDataset): Promise<unknown>;
+  then<T>(
+    onfulfilled?: ((value: unknown) => T | PromiseLike<T>) | null,
+    onrejected?: ((reason: unknown) => T | PromiseLike<T>) | null,
+  ): Promise<T>;
+}
+
+function lazyQuery(
+  record: (target: IDataset | undefined) => void,
+  produce: () => Promise<unknown>,
+): LazyQuery {
+  return {
+    exec(target) {
+      record(target);
+      return produce();
+    },
+    then(onfulfilled, onrejected) {
+      record(undefined);
+      return produce().then(onfulfilled, onrejected);
+    },
+  };
+}
 
 beforeEach(() => {
   // a follows the shape; b reworded it (boolean flag, snapshot); c reworded it (string flag).
@@ -54,15 +117,60 @@ beforeEach(() => {
     { id: 'u2', ofKey: { id: keyId('a') }, language: 'de' },
     { id: 'u3', ofKey: { id: keyId('b') }, language: 'nl' },
   ];
-  keyWhere = vi.fn(() => Promise.resolve(keyRows));
+  keyExecTargets = [];
+  unitExecTargets = [];
+  snapshotExecTargets = [];
+  keyFailure = undefined;
+  unitFailure = undefined;
+  snapshotFailure = undefined;
+  keyGate = undefined;
+  releaseKeyRead = () => {};
+  keyWhere = vi.fn(() =>
+    lazyQuery(
+      (target) => {
+        if (target) keyExecTargets.push(target);
+      },
+      async () => {
+        if (keyGate) await keyGate;
+        if (keyFailure) throw keyFailure;
+        return keyRows;
+      },
+    ),
+  );
+  unitWhere = vi.fn(() =>
+    lazyQuery(
+      (target) => {
+        if (target) unitExecTargets.push(target);
+      },
+      async () => {
+        if (unitFailure) throw unitFailure;
+        return unitRows;
+      },
+    ),
+  );
   vi.spyOn(TranslationKey, 'select').mockReturnValue({ where: keyWhere } as any);
-  vi.spyOn(TranslationUnit, 'select').mockReturnValue({ where: () => Promise.resolve(unitRows) } as any);
-  keyUpdateFor = vi.fn().mockResolvedValue({});
+  vi.spyOn(TranslationUnit, 'select').mockReturnValue({ where: unitWhere } as any);
+  keyUpdateFor = vi.fn(() =>
+    lazyQuery(
+      (target) => {
+        if (target) snapshotExecTargets.push(target);
+      },
+      async () => {
+        if (snapshotFailure) throw snapshotFailure;
+        return {};
+      },
+    ),
+  );
   keyUpdate = vi.spyOn(TranslationKey, 'update').mockReturnValue({ for: keyUpdateFor } as any) as any;
 });
 afterEach(() => {
   vi.restoreAllMocks();
-  vi.mocked(upsertTranslationKey).mockClear();
+  vi.mocked(upsertTranslationKey).mockReset();
+  vi.mocked(upsertTranslationKey).mockImplementation(async () => ({
+    id: 'k',
+    versionId: 'v',
+    versionCreated: true,
+  }));
 });
 
 const written = () => vi.mocked(upsertTranslationKey).mock.calls.map(([data, ctx]) => ({ data, ctx }));
@@ -169,5 +277,234 @@ describe('clearShapeKeyOverride', () => {
     keyRows = [copyRow('c', { sourceText: undefined, overridden: true })];
     expect(await clearShapeKeyOverride({ shapeIri: SHAPE, key: 'person.givenName' })).toEqual({ clearedApps: [] });
     expect(written()).toEqual([]);
+  });
+});
+
+describe('explicit dataset transport', () => {
+  const targetA = new TargetDataset('target-a');
+  const sentinel = new TargetDataset('default-sentinel');
+
+  function holdKeyReads() {
+    keyGate = new Promise((resolve) => {
+      releaseKeyRead = resolve;
+    });
+  }
+
+  it('sends list, propagate, and clear queries and the snapshot removal to the target only', async () => {
+    expect(await listShapeKeyCopies({ shapeIri: SHAPE, key: 'person.givenName' }, { dataset: targetA })).toHaveLength(3);
+    expect(keyExecTargets).toEqual([targetA]);
+    expect(unitExecTargets).toEqual([targetA]);
+    expect(keyExecTargets).not.toContain(sentinel);
+    expect(unitExecTargets).not.toContain(sentinel);
+
+    await propagateShapeKeySource(
+      { shapeIri: SHAPE, key: 'person.givenName', sourceText: 'Given name (new)' },
+      {},
+      { dataset: targetA },
+    );
+    const propagated = vi.mocked(upsertTranslationKey).mock.calls;
+    expect(propagated).toHaveLength(1);
+    expect(propagated[0]?.[2]).toEqual({ dataset: targetA });
+    expect(keyExecTargets.every((dataset) => dataset === targetA)).toBe(true);
+    expect(unitExecTargets.every((dataset) => dataset === targetA)).toBe(true);
+
+    await clearShapeKeyOverride({ shapeIri: SHAPE, key: 'person.givenName' }, {}, { dataset: targetA });
+    const cleared = vi.mocked(upsertTranslationKey).mock.calls.slice(1);
+    expect(cleared.map((call) => call[2])).toEqual([{ dataset: targetA }, { dataset: targetA }]);
+    expect(snapshotExecTargets).toEqual([targetA]);
+    expect(snapshotExecTargets).not.toContain(sentinel);
+  });
+
+  it('reads each public execution.dataset getter once', async () => {
+    const once = async (
+      run: (execution: { readonly dataset?: IDataset }) => Promise<unknown>,
+    ) => {
+      let active: IDataset = targetA;
+      let reads = 0;
+      const pending = run({
+        get dataset() {
+          reads += 1;
+          return active;
+        },
+      });
+      expect(reads).toBe(1);
+      active = sentinel;
+      await pending;
+      expect(reads).toBe(1);
+    };
+
+    await once((execution) => listShapeKeyCopies({ shapeIri: SHAPE }, execution));
+    expect(keyExecTargets).toEqual([targetA]);
+    expect(unitExecTargets).toEqual([targetA]);
+
+    keyExecTargets = [];
+    unitExecTargets = [];
+    await once((execution) =>
+      propagateShapeKeySource(
+        { shapeIri: SHAPE, key: 'person.givenName', sourceText: 'Next' },
+        {},
+        execution,
+      ),
+    );
+    expect(vi.mocked(upsertTranslationKey).mock.calls.at(-1)?.[2]).toEqual({ dataset: targetA });
+
+    keyExecTargets = [];
+    unitExecTargets = [];
+    snapshotExecTargets = [];
+    await once((execution) =>
+      clearShapeKeyOverride({ shapeIri: SHAPE, key: 'person.givenName' }, {}, execution),
+    );
+    expect(snapshotExecTargets).toEqual([targetA]);
+    expect(vi.mocked(upsertTranslationKey).mock.calls.at(-1)?.[2]).toEqual({ dataset: targetA });
+  });
+
+  it('returns no apps when the opted-in first key read fails, and does not start a later query', async () => {
+    const failure = new Error('first-key-failed');
+    keyFailure = failure;
+    await expect(
+      clearShapeKeyOverride(
+        { shapeIri: SHAPE, key: 'person.givenName' },
+        {},
+        { dataset: targetA, skipInitialKeyReadFailure: true },
+      ),
+    ).resolves.toEqual({ clearedApps: [] });
+    expect(keyWhere).toHaveBeenCalledOnce();
+    expect(keyExecTargets).toEqual([targetA]);
+    expect(unitWhere).not.toHaveBeenCalled();
+    expect(upsertTranslationKey).not.toHaveBeenCalled();
+    expect(keyUpdate).not.toHaveBeenCalled();
+  });
+
+  it('rejects the original key error when the skip flag is absent or false', async () => {
+    const failure = new Error('key-read-failed');
+    keyFailure = failure;
+    await expect(clearShapeKeyOverride({ shapeIri: SHAPE, key: 'person.givenName' })).rejects.toBe(failure);
+    await expect(
+      clearShapeKeyOverride({ shapeIri: SHAPE, key: 'person.givenName' }, {}, { dataset: targetA }),
+    ).rejects.toBe(failure);
+    await expect(
+      clearShapeKeyOverride(
+        { shapeIri: SHAPE, key: 'person.givenName' },
+        {},
+        { dataset: targetA, skipInitialKeyReadFailure: false },
+      ),
+    ).rejects.toBe(failure);
+  });
+
+  it('executes the successful first key read once and reuses those rows', async () => {
+    await clearShapeKeyOverride(
+      { shapeIri: SHAPE, key: 'person.givenName' },
+      {},
+      { dataset: targetA, skipInitialKeyReadFailure: true },
+    );
+    expect(keyWhere).toHaveBeenCalledOnce();
+    expect(keyExecTargets).toEqual([targetA]);
+    expect(unitWhere).toHaveBeenCalledOnce();
+    expect(unitExecTargets).toEqual([targetA]);
+    expect(vi.mocked(upsertTranslationKey).mock.calls.map((call) => call[0].appId)).toEqual([
+      app('b'),
+      app('c'),
+    ]);
+  });
+
+  it('rejects a later unit, upsert, or snapshot failure unchanged', async () => {
+    const unitError = new Error('unit-read-failed');
+    unitFailure = unitError;
+    await expect(
+      clearShapeKeyOverride(
+        { shapeIri: SHAPE, key: 'person.givenName' },
+        {},
+        { dataset: targetA, skipInitialKeyReadFailure: true },
+      ),
+    ).rejects.toBe(unitError);
+    expect(upsertTranslationKey).not.toHaveBeenCalled();
+    expect(keyUpdate).not.toHaveBeenCalled();
+
+    unitFailure = undefined;
+    const upsertError = new Error('upsert-failed');
+    vi.mocked(upsertTranslationKey).mockRejectedValueOnce(upsertError);
+    await expect(
+      clearShapeKeyOverride(
+        { shapeIri: SHAPE, key: 'person.givenName' },
+        {},
+        { dataset: targetA, skipInitialKeyReadFailure: true },
+      ),
+    ).rejects.toBe(upsertError);
+    expect(keyUpdate).not.toHaveBeenCalled();
+
+    const snapshotError = new Error('snapshot-removal-failed');
+    snapshotFailure = snapshotError;
+    vi.mocked(upsertTranslationKey).mockResolvedValue({
+      id: 'k',
+      versionId: 'v',
+      versionCreated: true,
+    });
+    await expect(
+      clearShapeKeyOverride(
+        { shapeIri: SHAPE, key: 'person.givenName' },
+        {},
+        { dataset: targetA, skipInitialKeyReadFailure: true },
+      ),
+    ).rejects.toBe(snapshotError);
+  });
+
+  it('keeps the captured dataset and skip flag after the caller mutates them during the first read', async () => {
+    holdKeyReads();
+    let active: IDataset = targetA;
+    let skip = true;
+    let datasetReads = 0;
+    let skipReads = 0;
+    const execution = {
+      get dataset() {
+        datasetReads += 1;
+        return active;
+      },
+      get skipInitialKeyReadFailure() {
+        skipReads += 1;
+        return skip;
+      },
+    };
+    const pending = clearShapeKeyOverride(
+      { shapeIri: SHAPE, key: 'person.givenName' },
+      {},
+      execution,
+    );
+    expect(datasetReads).toBe(1);
+    expect(skipReads).toBe(1);
+    expect(keyExecTargets).toEqual([targetA]);
+    active = sentinel;
+    skip = false;
+    releaseKeyRead();
+    await pending;
+    expect(datasetReads).toBe(1);
+    expect(skipReads).toBe(1);
+    expect(keyExecTargets).toEqual([targetA]);
+    expect(unitExecTargets).toEqual([targetA]);
+    expect(snapshotExecTargets).toEqual([targetA]);
+    expect(vi.mocked(upsertTranslationKey).mock.calls.map((call) => call[2])).toEqual([
+      { dataset: targetA },
+      { dataset: targetA },
+    ]);
+    expect(keyExecTargets).not.toContain(sentinel);
+    expect(unitExecTargets).not.toContain(sentinel);
+    expect(snapshotExecTargets).not.toContain(sentinel);
+  });
+
+  it('rejects a default unit failure while the key read is still held, without a second key read', async () => {
+    holdKeyReads();
+    const unitError = new Error('unit-failed-first');
+    unitFailure = unitError;
+    const pending = listShapeKeyCopies({ shapeIri: SHAPE });
+    const outcome = await Promise.race([
+      pending.then(
+        () => 'resolved',
+        (error: unknown) => error,
+      ),
+      new Promise((resolve) => setTimeout(() => resolve('still-held'), 50)),
+    ]);
+    expect(outcome).toBe(unitError);
+    expect(keyWhere).toHaveBeenCalledOnce();
+    expect(unitWhere).toHaveBeenCalledOnce();
+    releaseKeyRead();
   });
 });
