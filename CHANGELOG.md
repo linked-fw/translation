@@ -1,5 +1,11 @@
 # @\_linked/translation
 
+## 0.10.0
+
+### Minor Changes
+
+- [#87](https://github.com/linked-fw/translation/pull/87) [`35e4ce7`](https://github.com/linked-fw/translation/commit/35e4ce761dec3df13a9b1b35ce979353968050b8) Thanks [@carlenmy](https://github.com/carlenmy)! - Add `@_linked/translation/shape-key-copies`: server-side operations on one shape key across every app that holds a copy. `listShapeKeyCopies` reads the copies with their override state and languages, `propagateShapeKeySource` gives every copy that follows the shape new wording (overridden copies keep theirs), and `clearShapeKeyOverride` reverts overrides, for all apps or one, to the shape's current wording. Text changes go through `upsertTranslationKey`, so they record a key version and stale the key's units like any other source change.
+
 ## 0.9.5
 
 ### Patch Changes
