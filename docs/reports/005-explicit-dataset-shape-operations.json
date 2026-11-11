@@ -1,0 +1,36 @@
+{
+  "scope": "accepted local Phase1B transport/source checkpoint",
+  "source": {
+    "src/shape-key-copies.ts": "3e472918c901741195a3968895ced7af40b2147fc17b0de5dface0dbad3d30e6",
+    "tests/translation-shape-key-copies.test.ts": "bdbf715fd7264c670dcc4fc9168e72468617af741058612a2f57b3913f0723fe",
+    "src/shapes/TranslationProvider.ts": "2ff6feaea08f8ea9249c3c618b37598eb6207781ab716eacedd340e42d791ed1"
+  },
+  "focused": {
+    "files": 3,
+    "passed": 35,
+    "failed": 0,
+    "runnerMs": 800,
+    "processSeconds": 1.143
+  },
+  "packageTypes": {
+    "diagnostics": 0,
+    "seconds": 0.983
+  },
+  "testTypes": {
+    "diagnostics": 0,
+    "milliseconds": 729
+  },
+  "independent": {
+    "pairedGroups": 8,
+    "noConfirmedP1P2": true,
+    "manifestSHA256": "7922525a1c6780a974d4395c9cedab4b6cfad1759b2264839a29a64cdf95d8f4"
+  },
+  "testFreezeManifestSHA256": "180394fe6d79221a5ecf4abee698842df35a46cb113078fd47fa83c2b0e1ff81",
+  "limits": [
+    "scripted transport is not semantic store",
+    "real inferring-store effects pending",
+    "emitted public consumers/build/full suite pending",
+    "release approval pending"
+  ],
+  "privateLogsOrRuntimeConfigurationIncluded": false
+}

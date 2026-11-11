@@ -20,6 +20,7 @@ import { TranslationKey } from './shapes/TranslationKey.js';
 import { TranslationUnit } from './shapes/TranslationUnit.js';
 import {
   upsertTranslationKey,
+  type TranslationExecutionOptions,
   type TranslationKeyInput,
   type TranslationKeyWriteContext,
 } from './shapes/TranslationProvider.js';
@@ -53,6 +54,11 @@ export interface ShapeKeyQuery {
   key?: string;
 }
 
+/** Clear may opt in to treating a failed first key-copy read as nothing to clear. */
+export interface ShapeKeyClearExecutionOptions extends TranslationExecutionOptions {
+  readonly skipInitialKeyReadFailure?: boolean;
+}
+
 const iri = (value: unknown): string | undefined =>
   typeof value === 'string' ? value || undefined : (value as { id?: string } | undefined)?.id || undefined;
 const text = (value: unknown): string | undefined =>
@@ -69,28 +75,30 @@ const keyWhere = (query: ShapeKeyQuery) => (k: any) => {
   return query.key === undefined ? shape : shape.and(k.key.equals(query.key));
 };
 
-/**
- * The copies of the shape keys `query` names, one per app. A key that names no app is not a
- * copy and is left out.
- */
-export async function listShapeKeyCopies(query: ShapeKeyQuery = {}): Promise<ShapeKeyCopyRecord[]> {
-  const [keys, units] = await Promise.all([
-    TranslationKey.select((k) => [
-      k.key,
-      k.ofShape,
-      k.ofApplication,
-      k.sourceText,
-      k.overridden,
-      k.shapeSource,
-      k.ofProperty,
-      k.fromPackage,
-      k.namespace,
-      k.description,
-      k.kind,
-      k.format,
-    ]).where(keyWhere(query) as any),
-    TranslationUnit.select((u) => [u.ofKey, u.language]).where(((u: any) => keyWhere(query)(u.ofKey)) as any),
-  ]);
+function keyCopiesQuery(query: ShapeKeyQuery) {
+  return TranslationKey.select((k) => [
+    k.key,
+    k.ofShape,
+    k.ofApplication,
+    k.sourceText,
+    k.overridden,
+    k.shapeSource,
+    k.ofProperty,
+    k.fromPackage,
+    k.namespace,
+    k.description,
+    k.kind,
+    k.format,
+  ]).where(keyWhere(query) as any);
+}
+
+function unitLanguagesQuery(query: ShapeKeyQuery) {
+  return TranslationUnit.select((u) => [u.ofKey, u.language]).where(
+    ((u: any) => keyWhere(query)(u.ofKey)) as any,
+  );
+}
+
+function copiesFrom(keys: unknown, units: unknown): ShapeKeyCopyRecord[] {
   const languagesOf = new Map<string, Set<string>>();
   for (const unit of (units ?? []) as any[]) {
     const keyId = iri(unit.ofKey);
@@ -125,6 +133,24 @@ export async function listShapeKeyCopies(query: ShapeKeyQuery = {}): Promise<Sha
     });
   }
   return copies;
+}
+
+/**
+ * The copies of the shape keys `query` names, one per app. A key that names no app is not a
+ * copy and is left out.
+ */
+export async function listShapeKeyCopies(
+  query: ShapeKeyQuery = {},
+  execution?: TranslationExecutionOptions,
+): Promise<ShapeKeyCopyRecord[]> {
+  const dataset = execution?.dataset;
+  const keyQuery = keyCopiesQuery(query);
+  const unitQuery = unitLanguagesQuery(query);
+  const [keys, units] = await Promise.all([
+    dataset ? keyQuery.exec(dataset) : keyQuery,
+    dataset ? unitQuery.exec(dataset) : unitQuery,
+  ]);
+  return copiesFrom(keys, units);
 }
 
 /** The copy's own declaration, so a text write keeps what the copy declares. */
@@ -162,15 +188,24 @@ export interface ShapeKeyPropagation {
  */
 export async function propagateShapeKeySource(
   data: { shapeIri: string; key: string; sourceText: string },
-  authorship: Pick<TranslationKeyWriteContext, 'createdBy'> = {}
+  authorship: Pick<TranslationKeyWriteContext, 'createdBy'> = {},
+  execution?: TranslationExecutionOptions,
 ): Promise<ShapeKeyPropagation> {
+  const dataset = execution?.dataset;
   const sourceText = data.sourceText?.trim();
   if (!sourceText) throw new Error('sourceText is required.');
-  const copies = await listShapeKeyCopies({ shapeIri: data.shapeIri, key: data.key });
+  const copies = await listShapeKeyCopies(
+    { shapeIri: data.shapeIri, key: data.key },
+    dataset === undefined ? undefined : { dataset },
+  );
   const following = copies.filter((c) => !c.overridden);
   for (const copy of following) {
     // A declaration refresh: it never marks the copy overridden.
-    await upsertTranslationKey(asKeyInput(copy, sourceText), { ...authorship, source: 'declaration-sync' });
+    const input = asKeyInput(copy, sourceText);
+    const write = { ...authorship, source: 'declaration-sync' as const };
+    await (dataset === undefined
+      ? upsertTranslationKey(input, write)
+      : upsertTranslationKey(input, write, { dataset }));
   }
   return { updatedApps: appsOf(following), skippedOverrides: appsOf(copies.filter((c) => c.overridden)) };
 }
@@ -184,9 +219,27 @@ export async function propagateShapeKeySource(
  */
 export async function clearShapeKeyOverride(
   data: { shapeIri: string; key: string; appId?: string },
-  authorship: Pick<TranslationKeyWriteContext, 'createdBy'> = {}
+  authorship: Pick<TranslationKeyWriteContext, 'createdBy'> = {},
+  execution?: ShapeKeyClearExecutionOptions,
 ): Promise<{ clearedApps: string[] }> {
-  const copies = await listShapeKeyCopies({ shapeIri: data.shapeIri, key: data.key });
+  const dataset = execution?.dataset;
+  const skipInitialKeyReadFailure = execution?.skipInitialKeyReadFailure === true;
+  const query = { shapeIri: data.shapeIri, key: data.key };
+  let copies: ShapeKeyCopyRecord[];
+  if (skipInitialKeyReadFailure) {
+    const keyQuery = keyCopiesQuery(query);
+    let keys: unknown;
+    try {
+      keys = await (dataset ? keyQuery.exec(dataset) : keyQuery);
+    } catch {
+      return { clearedApps: [] };
+    }
+    const unitQuery = unitLanguagesQuery(query);
+    const units = await (dataset ? unitQuery.exec(dataset) : unitQuery);
+    copies = copiesFrom(keys, units);
+  } else {
+    copies = await listShapeKeyCopies(query, dataset === undefined ? undefined : { dataset });
+  }
   const overridden = copies.filter((c) => c.overridden && (data.appId === undefined || c.appId === data.appId));
   const canonical = copies.find((c) => !c.overridden && c.sourceText !== undefined)?.sourceText;
   const cleared: ShapeKeyCopyRecord[] = [];
@@ -194,10 +247,15 @@ export async function clearShapeKeyOverride(
     const next = canonical ?? copy.shapeSource ?? copy.sourceText;
     if (next === undefined) continue;
     // An explicit app edit: the only write that may reset the override flag.
-    await upsertTranslationKey({ ...asKeyInput(copy, next), overridden: false }, { ...authorship, source: 'app-edit' });
+    const input = { ...asKeyInput(copy, next), overridden: false as const };
+    const write = { ...authorship, source: 'app-edit' as const };
+    await (dataset === undefined
+      ? upsertTranslationKey(input, write)
+      : upsertTranslationKey(input, write, { dataset }));
     if (copy.shapeSource !== undefined) {
       // In the mutation DSL an explicit `undefined` removes the value.
-      await TranslationKey.update({ shapeSource: undefined } as any).for({ id: copy.id } as any);
+      const removal = TranslationKey.update({ shapeSource: undefined } as any).for({ id: copy.id } as any);
+      await (dataset ? removal.exec(dataset) : removal);
     }
     cleared.push(copy);
   }

@@ -33,7 +33,15 @@ Actual own Node24.22/Core2.47/Vitest5.1 gates: focused3files27/27 pass (818ms ru
 
 The actual InMemoryDataset refuses bulk where UPDATE. Tests assert that genuine selected-target refusal and absence of global fallback; successful persisted stale-unit effect remains the required real inferring-store gate. Unit fixtures now use the existing public upsertTranslationUnit in serial isolated setup, restoring sentinel in finally before target/concurrent assertions; no model/type/cast/unit-writer API expansion. Earlier read-only timeout, fixture/type failures and approval-stop outputs stay preserved. Fresh explicit user permission now covers relevant private source/tests/context to Cursor/Grok while excluding secrets, credentials, env files and real user data. All current external workers have exited and only the matching temporary project policy was removed.
 
-Root accepted Phase1A locally within these limits and authorized its phase commit. See report004. Phase1B source is now authorized as a separate scoped slice; it has not begun. No new emitted JS/d.ts/public artifact, full suite, real-store successful staling, release, Changeset, source commit, PR/push/publication or completed CN handoff is claimed by these quick gates.
+Root accepted Phase1A locally within these limits and authorized its phase commit. See report004. Phase1B source was subsequently completed and locally accepted as recorded below. No new emitted JS/d.ts/public artifact, full suite, real-store successful staling, release, Changeset, source commit, PR/push/publication or completed CN handoff is claimed by these quick gates.
+
+### Phase1B locally accepted; Phase2 qualification authorized
+
+Shape-copy operations now snapshot the optional dataset once and retain it through key/unit reads, nested upserts and snapshot removal. Clear captures its explicit true-only first-read policy before awaiting; only the initial key SELECT execution is caught, its successful rows are reused, and all later errors stay outside the catch. Default dispatch/Promise.all/errors, canonical validation, override/count/language behavior and author forwarding are preserved. Provider remains the accepted Phase1A bytes.
+
+Actual own Node24.22/Core2.47 gates:35/35 focused tests (800ms runner/1.143s process), narrow test semantic types0errors729ms; unchanged production source package no-emit0errors0.983s. Separate-context review ran8 fresh paired groups using actual Core builders and explicitly scripted transport, with no confirmed P1/P2. Root accepted the bounded component; report005 records exact source/test hashes and limits. These are not successful RDF/inference/staling claims.
+
+Root authorized the local Phase1B commit and planned Phase2: own build/emitted public JS+d.ts consumer qualification, full package suite and real inferring-store controls. Audit lifecycle/test endpoints first. Use only owned labelled infrastructure/unique datasets and a free nonoverlapping port/subnet; no shared/owner3030 or PG42421/49422/63059. Product integration tests remain scoped source-worker edits; source Phase1 remains frozen absent a concrete finding. Fresh independent Phase2 review and separate release approval remain required; no Changeset, push, PR or publication is authorized.
 
 ## Exact additive public contracts
 
@@ -92,7 +100,7 @@ When and only when captured skipInitialKeyReadFailure is true, isolate its FIRST
 
 ### Phase1 — bounded source implementation and paired unit tests
 
-Progress: Phase1A locally accepted (report004); Phase1B source authorized, validation and independent acceptance pending.
+Progress: Phase1A and Phase1B locally accepted (reports004–005); source phases complete within direct-dataset/transport test limits. Phase2 build/public consumers/full suite/real inferring-store qualification is now coordinator-authorized and pending.
 
 Worker reads full two production files plus immediate query/version helpers and existing shape-copy/version-write tests. Implement the exact public contracts and threading above; no package/lock/Core/auth edits. Update existing mocks to model legitimate builders with exec where required, not production fixture carveouts. Keep public output/argument compatibility; consumers with no options compile unchanged.
 
