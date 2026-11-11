@@ -37,6 +37,7 @@ package works without either peer.
 - `@_linked/translation/key-sync` — development-time source extraction and sync
 - `@_linked/translation/key-sync/node` — recursive source-tree scan + dry-run/apply orchestration
 - `@_linked/translation/shape-catalog` — package-owned translations attached to stable shape/property IRIs
+- `@_linked/translation/shape-key-copies` — server-side: one shape key across every app that holds it (list, propagate, clear overrides)
 - `@_linked/translation/discovery` — portable declarations and deterministic inventory merging
 - `@_linked/translation/linked-discovery` — serialized LINKED package catalogs
 - `@_linked/translation/archive` — full-fidelity backup and pure restore planning
@@ -86,6 +87,35 @@ only missing keys and active-language units into the consuming app's graph.
 Existing app-authored translations are never overwritten. Packages may export
 the TypeScript object or ship the same contract as JSON for a host's tooling
 to discover without executing application code.
+
+### One shape key across apps
+
+Every app that uses a shape keeps its own copy of each key the shape carries.
+An app may reword its copy; that marks the copy `overridden` and keeps the
+shape's wording at that moment as `shapeSource`. The server-side
+`@_linked/translation/shape-key-copies` entry point acts on all copies of one
+shape key at once:
+
+```ts
+import {
+  listShapeKeyCopies,
+  propagateShapeKeySource,
+  clearShapeKeyOverride,
+} from '@_linked/translation/shape-key-copies';
+
+// Every app's copy, with its override state and translated languages.
+await listShapeKeyCopies({ shapeIri, key: 'person.givenName' });
+// New wording for every copy that follows the shape; overrides keep theirs.
+await propagateShapeKeySource({ shapeIri, key: 'person.givenName', sourceText: 'Given name' });
+// Revert overrides (all apps, or one with `appId`) so they follow the shape again.
+await clearShapeKeyOverride({ shapeIri, key: 'person.givenName', appId });
+```
+
+Each text change is a normal key write (`upsertTranslationKey`): it records a
+new key version and marks that key's units stale. A clear reverts to the text of
+a copy that still follows the shape, or else to the copy's own `shapeSource`.
+The operations run on the default dataset and check no permissions: the host
+decides who may call them and which dataset they run in.
 
 Authoring tools — editors, menus, entitlements, capability activation — are
 deliberately not part of this package. They belong to the host application, so
