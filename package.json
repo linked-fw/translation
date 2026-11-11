@@ -1,14 +1,14 @@
 {
   "name": "@_linked/translation",
   "description": "LINKED translation management — graph-native i18n keys + units, Tolgee-compatible client, CDN delivery.",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "packageManager": "npm@12.2.0",
   "linked": {
     "kind": "library"
   },
   "type": "module",
   "main": "lib/esm/index.js",
-  "types": "index.d.ts",
+  "types": "lib/esm/index.d.ts",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -20,7 +20,6 @@
   },
   "files": [
     "lib",
-    "src",
     "LICENSE"
   ],
   "publishConfig": {
