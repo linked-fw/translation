@@ -2,8 +2,8 @@ import { createNameSpace } from '@_linked/core/utils/NameSpace';
 
 /**
  * Public ontology namespace for the translation package. First-party Linked
- * ontologies live at `https://linked.cm/ont/{ontologySlug}/{localName}`, where
- * the ontology slug — and the prefix label — is the package's public slug
+ * ontologies live at `https://linked.cm/ont/{name}/{localName}`, where
+ * the ontology's name — and the prefix label — is the package's public slug
  * (the LINKED first-party ontology namespace rule). So terms are
  * `https://linked.cm/ont/translation/TranslationKey` and the prefix is
  * `translation:`. Before 0.5.0 this was `https://id.linked.cm/translation/vocab#`.

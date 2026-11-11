@@ -1,7 +1,7 @@
 /**
  * The translation ontology follows the first-party namespace rule:
- * `https://linked.cm/ont/{ontologySlug}/{localName}`, with the package's public
- * slug as both the ontology slug and the prefix its data suggests.
+ * `https://linked.cm/ont/{name}/{localName}`, with the package's public
+ * slug as both the ontology's name and the prefix its data suggests.
  */
 import { describe, expect, it } from 'vitest';
 
