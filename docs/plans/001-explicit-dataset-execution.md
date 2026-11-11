@@ -1,6 +1,6 @@
 ---
 summary: Add explicit dataset execution to shape-key operations and key version writes without changing default dispatch, authorization or failure behavior.
-status: Tasks
+status: Implementation
 ---
 
 # Explicit dataset execution for CN shape-key delegation
@@ -12,6 +12,18 @@ The coordinator approved this bounded prerequisite on 2026-11-11, following the 
 Baseline: actual origin/main `91e805e7b88022e4113df130cc61ec0beb1a7a5e`, version0.10.0. The canonical LIGHT checkout is deliberately unchanged at `ad090db0549b70551250c31bd61d0b3494fd0d75`/main (0.8.0); implementation uses only this isolated Love checkout. No applicable ancestor/repository AGENTS.md or docs/architecture files were found. Follow repository README, Changesets policy, existing public query/subpath contracts and the coordinator's approved constraints. No active plans existed; this is plan001. Existing reports001–003 remain historical; reserve the next available report only at review, not now.
 
 CN currently visits every distinct default-slot physical store once within each ordered scope project, under existing scope-admin/main checks; shared stores can be visited again for another project. Its direct `.exec(store)` coverage cannot be reproduced by picking an app. `onBranch` requires a real app and imposes app-connection rights/graph routes. Scope delegation must therefore pass its existing trusted store to supported package operations. Per-app clear keeps its existing authorized active-branch `onBranch` context and may omit the dataset. Optional CN overview/detail read conversion is deferred. This package does not implement or change CN authorization, routing, scope traversal or actor lookup.
+
+## Current coordinator authorization — 2026-11-11
+
+The root coordinator has now authorized this package's isolated source preparation/implementation through pinned Cursor CLI Grok4.7Low only (`grok-4.7-low`, sandbox enabled, auto-update disabled, actual HOME/Node24). One source worker at a time in this repo; max two concurrent source workers across different repos is explicitly allowed. This supersedes the initial plan-only hold, not the independent review/publication gates. Coordinator agents do not hand-edit product code. No source commit/Changeset/PR/push/publish is authorized yet; only plan documentation commits precede workers.
+
+**Phase1A source GO:** ONLY `src/shapes/TranslationProvider.ts` plus focused typed tests (`tests/translation-version-writes.test.ts` and optional new `tests/translation-execution-dataset.test.ts`). Export TranslationExecutionOptions, add third upsert option and snapshot dataset once; thread it through private key-version read/create/ensure and all key/currentVersion/stale-unit queries. Existing no-option callers/default errors/dispatch must stay unchanged; do not add an implicit current dataset override, skip policy, unit/revision/release public options, auth change or another production file. Only this first subphase is source-authorized now. Worker performs no tests/shell/network/services/commits; coordinator freezes exact output, runs own focused unit/type checks, and obtains fresh independent review before accepting.
+
+**Phase1B depends on accepted1A:** later separate worker changes `src/shape-key-copies.ts` plus focused tests using the established API; target/skip snapshots and clear-only first-read catch remain exactly as approved. It is not parallel in this package and awaits coordinator scheduling.
+
+Source jobs are bounded at300s, use a separate chat for this repo, exact project Read/Write permission scope and normal interactive workspace trust if required; no force/yolo/trust flag, auto-MCP approval or global/private profile edits. Preserve all failed/partial attempts. Normal same-task CLI resume may retain context; model/spend remains the user-selected pinned Grok Low. Any output is an intermediate candidate until frozen and independently reviewed. No public API qualification claim until actual new emitted JS+d.ts are built/checked.
+
+Baseline install qualification is complete: normal own npm ci53.188s/457 packages; Node24.22/npm11.19.1 (manifest packageManager12.2, not claimed qualified), actual one Core2.47 physical/loaded copy; locked graph intact. Existing two focused files21/21 pass, native modules and published0.10 API/consumer checks pass. Source, manifest and lock unchanged; own real node_modules/private cache only. Details remain in coordinator evidence, not copied private logs in the repo. Real inferring-store/new output/build/fullsuite remain pending.
 
 ## Exact additive public contracts
 
@@ -66,7 +78,7 @@ The existing CN clear skips a failed first key-copy read but does not hide subse
 
 When and only when captured skipInitialKeyReadFailure is true, isolate its FIRST TranslationKey copy SELECT in a narrow try/catch. Failure returns `{clearedApps:[]}` with no unit/version/key/write query afterward. A successful first key read is reused (no duplicate preflight); unit/language reads and all later upsert/version/key/stale/snapshot operations are outside the catch. Their current errors propagate. A later upsert's existing-key SELECT is not the first copy SELECT. Factor only private copy-query/mapping code needed to support the option. Do not add generic phase/error/commit machinery or make the default path sequential to identify errors.
 
-## Ordered implementation tasks — all source tasks pending GO
+## Ordered implementation tasks — staged coordinator GO
 
 ### Phase1 — one bounded source implementation and paired unit tests
 
