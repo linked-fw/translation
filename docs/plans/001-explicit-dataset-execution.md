@@ -1,6 +1,6 @@
 ---
 summary: Add explicit dataset execution to shape-key operations and key version writes without changing default dispatch, authorization or failure behavior.
-status: Implementation
+status: Review
 ---
 
 # Explicit dataset execution for CN shape-key delegation
@@ -142,3 +142,9 @@ After independent review and all applicable gates, add one Changesets **minor** 
 No node_modules or build output is present in this new checkout; no installs/tests/typechecks/builds/services run. Lockfilev3 pins Core2.47.0 (one locked path, not npm-ls proof), server-utils1.17.0, xsd1.4.4, CLI1.61.0, TypeScript5.9.3, Vitest5.1.0, jsdom30.1.3, React19.3.1. Manifest keeps Core^2.41.0; no dependency bump/localization is part of this source unit. Explicit Node24.22.0 is available. The earlier CN fixture's Core2.48/Vitest4 install is not this exact lock qualification. Root coordinates an owned normal install and lifecycle/publication precautions before any install or service. No owner .env/.npmrc/auth/ignored runtime data was copied.
 
 Package scripts: test=`vitest run && npm run check:subpaths`, build=`npm exec linked build && npm run check:subpaths`; vitest defaults jsdom with tests/setup.ts. PR workflow reuses linked-fw checks with require-tests true, run-e2e false. Tests default to spies today; added direct-dataset and real-store controls must prove the new boundary rather than mirror its implementation. Full suite/build/real-store gates wait until review, then repeat only for relevant changes or failures. All source/test/helper hashes must be frozen and verified before/after independent probes.
+
+## REVIEW — release preparation
+
+All three planned local phases are complete: source/report004–005, emitted/full/real-store qualification report006, and minor Changeset/draft upstream review preparation report007. The coordinator retains this approved phase record. Source was reviewed for readability and scope; no extra production edits were necessary after the accepted two-file candidate. Independent component and persisted-store reviews found no confirmed P1/P2 in their stated boundaries.
+
+Current origin/main was rechecked at91e805e7b88022e4113df130cc61ec0beb1a7a5e; no integration update was necessary. Root authorized only the new feature branch push and a draft PR to main after local evidence review. The PR workflow runs build/test/changeset checks; the separate publish workflow requires a push to main. Minor Changeset preparation leaves package/lock0.10.0 unchanged. Upstream review/CI/merge/publication and subsequent CN consumer migration remain separate; registry0.10.0 does not contain this new seam.
