@@ -1,0 +1,104 @@
+---
+summary: Add explicit dataset execution to shape-key operations and key version writes without changing default dispatch, authorization or failure behavior.
+status: Tasks
+---
+
+# Explicit dataset execution for CN shape-key delegation
+
+## Approved boundary and current authorization
+
+The coordinator approved this bounded prerequisite on 2026-11-11, following the verified public0.10 execution proposal. This commit contains the plan/tasks only. **No source implementation, dependency installation, build, service startup, PR, push or publication is authorized by this plan commit.** The coordinator must give the next source GO and coordinate one Cursor/Grok source worker. No parallel source workers or Core changes.
+
+Baseline: actual origin/main `91e805e7b88022e4113df130cc61ec0beb1a7a5e`, version0.10.0. The canonical LIGHT checkout is deliberately unchanged at `ad090db0549b70551250c31bd61d0b3494fd0d75`/main (0.8.0); implementation uses only this isolated Love checkout. No applicable ancestor/repository AGENTS.md or docs/architecture files were found. Follow repository README, Changesets policy, existing public query/subpath contracts and the coordinator's approved constraints. No active plans existed; this is plan001. Existing reports001–003 remain historical; reserve the next available report only at review, not now.
+
+CN currently visits every distinct default-slot physical store once within each ordered scope project, under existing scope-admin/main checks; shared stores can be visited again for another project. Its direct `.exec(store)` coverage cannot be reproduced by picking an app. `onBranch` requires a real app and imposes app-connection rights/graph routes. Scope delegation must therefore pass its existing trusted store to supported package operations. Per-app clear keeps its existing authorized active-branch `onBranch` context and may omit the dataset. Optional CN overview/detail read conversion is deferred. This package does not implement or change CN authorization, routing, scope traversal or actor lookup.
+
+## Exact additive public contracts
+
+Define/export the execution type beside TranslationKeyWriteContext in the already public shapes/TranslationProvider subpath; shape-key-copies imports/re-exports the type as needed without moving code to an isomorphic root barrel.
+
+```ts
+import type { IDataset } from '@_linked/core/interfaces/IDataset';
+
+export interface TranslationExecutionOptions {
+  readonly dataset?: IDataset;
+}
+export interface ShapeKeyClearExecutionOptions extends TranslationExecutionOptions {
+  readonly skipInitialKeyReadFailure?: boolean;
+}
+
+listShapeKeyCopies(query?: ShapeKeyQuery,
+  execution?: TranslationExecutionOptions): Promise<ShapeKeyCopyRecord[]>;
+propagateShapeKeySource(data: {shapeIri:string; key:string; sourceText:string},
+  authorship?: Pick<TranslationKeyWriteContext, 'createdBy'>,
+  execution?: TranslationExecutionOptions): Promise<ShapeKeyPropagation>;
+clearShapeKeyOverride(data: {shapeIri:string; key:string; appId?:string},
+  authorship?: Pick<TranslationKeyWriteContext, 'createdBy'>,
+  execution?: ShapeKeyClearExecutionOptions): Promise<{clearedApps:string[]}>;
+upsertTranslationKey(data: TranslationKeyInput,
+  authorship?: TranslationKeyWriteContext,
+  execution?: TranslationExecutionOptions): Promise<TranslationKeyWriteResult>;
+```
+
+These are trusted in-process options, never client JSON/RPC authority. Capture dataset identity once at public entry; clear also captures the opt-in once before its first await. Passing options through nested operations must use the captured target, not reread a caller-mutable options object. The dataset object's own lifetime remains its owner's responsibility; do not freeze/clone a live dataset.
+
+Omitted/undefined dataset retains current shape/global dispatch. Omitted/false skip flag retains current error behavior, including original thrown values and existing list/Promise.all flow. No new defaults, permissions, quotas, system identity, global dataset/shape/dispatch mutation, ambient dataset scope, transaction framework or Core API. Existing pure hash/contract/version-ID helpers stay pure. Existing helper error handling (including readKeyVersion catch-to-null) stays unchanged; the new clear catch must not absorb later failures.
+
+## Required target threading — no implicit nested execution escapes
+
+Use Core's existing `.exec(dataset)`; `.one()` is a builder, so `.one().exec(dataset)` is valid. Execute each original query exactly once. An explicit target must never fall back to default after rejection.
+
+| Function | All affected paths |
+| --- | --- |
+| listShapeKeyCopies | Copy-key SELECT and unit/language SELECT on the captured target. |
+| propagateShapeKeySource | Forward captured target to list and every upsert; preserve declaration-sync/override rules and returned counts. |
+| clearShapeKeyOverride | Forward target to list/opt-in copy loader, each upsert and direct shapeSource-removal UPDATE. |
+| upsertTranslationKey | Existing-key SELECT, ensureCurrentKeyVersion, changed/first version creation, key CREATE/UPDATE, stale-unit UPDATE and currentVersion UPDATE. |
+| ensureCurrentKeyVersion | Forward target to readKeyVersion, backfill createTranslationKeyVersion and currentVersion UPDATE. |
+| readKeyVersion | Version SELECT on the target, with existing catch behavior unchanged. |
+| createTranslationKeyVersion | Version CREATE on the same target; derivation/hash/ID code unchanged. |
+
+Only two production files: `src/shape-key-copies.ts` and `src/shapes/TranslationProvider.ts`. Existing callers of private version helpers outside this bounded key path omit target and retain current dispatch. Do not widen public unit/revision/release APIs. Keep canonical key-node checks, version/supersedes/source contracts, author identity, metadata, override behavior, language sorting and no-app/plain-UI exclusions.
+
+## Clear-only initial-read option
+
+The existing CN clear skips a failed first key-copy read but does not hide subsequent writes. Package clear currently bundles initial reads and writes; catching the whole operation or list would swallow too much.
+
+When and only when captured skipInitialKeyReadFailure is true, isolate its FIRST TranslationKey copy SELECT in a narrow try/catch. Failure returns `{clearedApps:[]}` with no unit/version/key/write query afterward. A successful first key read is reused (no duplicate preflight); unit/language reads and all later upsert/version/key/stale/snapshot operations are outside the catch. Their current errors propagate. A later upsert's existing-key SELECT is not the first copy SELECT. Factor only private copy-query/mapping code needed to support the option. Do not add generic phase/error/commit machinery or make the default path sequential to identify errors.
+
+## Ordered implementation tasks — all source tasks pending GO
+
+### Phase1 — one bounded source implementation and paired unit tests
+
+Worker reads full two production files plus immediate query/version helpers and existing shape-copy/version-write tests. Implement the exact public contracts and threading above; no package/lock/Core/auth edits. Update existing mocks to model legitimate builders with exec where required, not production fixture carveouts. Keep public output/argument compatibility; consumers with no options compile unchanged.
+
+Focused test files: `tests/translation-shape-key-copies.test.ts`, `tests/translation-version-writes.test.ts`, and at most one new `tests/translation-execution-dataset.test.ts` if real Core query-to-dataset tests do not fit those files. Preserve existing suites and do not mark failures skipped/retried.
+
+Concrete acceptance cases:
+
+- `default-unchanged`: omitted options, empty options and skip false preserve outputs, current dispatch, original read/write error identity and existing override/count behavior.
+- `explicit-target-all-paths`: targetA receives every copy/unit/key/version/currentVersion/stale/snapshot query; a different default sentinel receives zero. Include existing version, missing-version backfill, new key and changed-version branches. No fallback on selected-store refusal.
+- `concurrent-isolation`: interleave targetA/targetB operations using identical node IRIs, including an await inside version hashing; no target crossing or global default change. Mutate caller execution.dataset after the first await and assert all queries stay on the originally captured target.
+- `first-key-failure-opt-in`: explicit true + first copy SELECT rejection returns empty; no later unit/read/write call. Omission/false rejects the SAME error. Assert the key SELECT occurs once on success.
+- `later-errors-not-swallowed`: with successful first key lookup and opt-in, separately reject unit/language SELECT, later existing-key SELECT, version creation, key UPDATE, stale UPDATE and snapshot removal; assert the original failure rejects. Preserve readKeyVersion's pre-existing catch-to-null/backfill behavior instead of inventing a new error policy. Mutate skip flag across await and assert the captured policy remains.
+- `semantic-controls`: changed source creates version/supersedes and stales only its own units; unchanged text with an existing valid version creates/stales none; missing version backfills in target; propagation leaves overrides; clear resets false/removes snapshot; no-text copies are not counted; malformed sole copy node refuses without writes. Do not promise multi-copy/store rollback.
+
+Quick gate after phase1 (future owned install only): `npm exec -- vitest run tests/translation-shape-key-copies.test.ts tests/translation-version-writes.test.ts tests/translation-execution-dataset.test.ts` (omit new path if unused) and `npm exec -- tsc -p tsconfig-esm.json --noEmit`. Target1–2 minutes; capture actual duration/failures, do not change timeouts or suppress tests to meet the target.
+
+### Phase2 — independent review, real store and public consumers
+
+Depends on phase1 and a frozen exact candidate. Use a separately owned consumer fixture/normal dependencies for actual inferring Fuseki `ghcr.io/linked-fw/fuseki:6.2.0-2`, own sanitized data/config/ports, no owner/shared store. This repo does not declare Fuseki: do not add an undeclared integration import to its default tests or a machine-path dependency. Coordinator must qualify and document the owned real-store harness before running it; no services are authorized by this plan commit.
+
+Real store cases: two explicit datasets plus a separate default sentinel, same app/key/version IRIs in each, legitimate distinct app/key nodes within each store; seed through real public package upsert APIs. Verify persisted key/version/currentVersion/supersedes/stale/snapshot bytes stay in target and concurrent calls stay isolated. Pair denied/faulted targets with valid targets. Keep CN multi-project/shared-store count, scope-admin/main and per-app branch/channel/auth acceptance in the later CN integration task; package store selection is not proof of authorization.
+
+Public consumer/declaration checks: use `@_linked/translation/shape-key-copies` and `@_linked/translation/shapes/TranslationProvider` and the actual built JS+d.ts; no src/deep implementation imports or ambient shims. Old calls and new dataset options compile; primitive/string dataset, skip flag on unrelated operations and malformed option types fail TypeScript. Run `npm run build`, `npm test` (full review gate), and `npm run check:subpaths`; record exact commands, counts and timings once dependencies are qualified. Build/subpath gates are necessary because package ships lib only. Do not treat mock unit successes as real-store/consumer qualification.
+
+### Phase3 — reviewed release preparation, no implicit publication
+
+After independent review and all applicable gates, add one Changesets **minor** entry for the additive public API (consistent with0.10's additive feature release), retaining0.10.0 package/lock until the normal Release PR versions it. Expected next minor is0.11.0 if no intervening release; do not assert or hand-edit that future version. Changesets README/config use main and automatic Release PR/publish workflow. Docs-only planning needs no changeset. Root separately authorizes any upstream PR, push, merge or publication after concrete reviewable work; none is authorized now. Publication/consumer qualification remains a prerequisite for faithful CN delegation;0.10 alone does not finish CN handoff.
+
+## Readiness at this plan commit
+
+No node_modules or build output is present in this new checkout; no installs/tests/typechecks/builds/services run. Lockfilev3 pins Core2.47.0 (one locked path, not npm-ls proof), server-utils1.17.0, xsd1.4.4, CLI1.61.0, TypeScript5.9.3, Vitest5.1.0, jsdom30.1.3, React19.3.1. Manifest keeps Core^2.41.0; no dependency bump/localization is part of this source unit. Explicit Node24.22.0 is available. The earlier CN fixture's Core2.48/Vitest4 install is not this exact lock qualification. Root coordinates an owned normal install and lifecycle/publication precautions before any install or service. No owner .env/.npmrc/auth/ignored runtime data was copied.
+
+Package scripts: test=`vitest run && npm run check:subpaths`, build=`npm exec linked build && npm run check:subpaths`; vitest defaults jsdom with tests/setup.ts. PR workflow reuses linked-fw checks with require-tests true, run-e2e false. Tests default to spies today; added direct-dataset and real-store controls must prove the new boundary rather than mirror its implementation. Full suite/build/real-store gates wait until review, then repeat only for relevant changes or failures. All source/test/helper hashes must be frozen and verified before/after independent probes.
