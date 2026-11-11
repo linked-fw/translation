@@ -19,13 +19,13 @@ The root coordinator has now authorized this package's isolated source preparati
 
 **Phase1A source GO:** ONLY `src/shapes/TranslationProvider.ts` plus focused typed tests (`tests/translation-version-writes.test.ts` and optional new `tests/translation-execution-dataset.test.ts`). Export TranslationExecutionOptions, add third upsert option and snapshot dataset once; thread it through private key-version read/create/ensure and all key/currentVersion/stale-unit queries. Existing no-option callers/default errors/dispatch must stay unchanged; do not add an implicit current dataset override, skip policy, unit/revision/release public options, auth change or another production file. Only this first subphase is source-authorized now. Worker performs no tests/shell/network/services/commits; coordinator freezes exact output, runs own focused unit/type checks, and obtains fresh independent review before accepting.
 
-**Phase1B depends on accepted1A:** later separate worker changes `src/shape-key-copies.ts` plus focused tests using the established API; target/skip snapshots and clear-only first-read catch remain exactly as approved. It is not parallel in this package and awaits coordinator scheduling.
+**Phase1B depends on accepted1A:** later separate worker changes `src/shape-key-copies.ts` plus focused tests using the established API; target/skip snapshots and clear-only first-read catch remain exactly as approved. It is not parallel in this package. Root has now authorized this dependent slice after local Phase1A acceptance.
 
 Source jobs are bounded at300s, use a separate chat for this repo, exact project Read/Write permission scope and normal interactive workspace trust if required; no force/yolo/trust flag, auto-MCP approval or global/private profile edits. Preserve all failed/partial attempts. Normal same-task CLI resume may retain context; model/spend remains the user-selected pinned Grok Low. Any output is an intermediate candidate until frozen and independently reviewed. No public API qualification claim until actual new emitted JS+d.ts are built/checked.
 
 Baseline install qualification is complete: normal own npm ci53.188s/457 packages; Node24.22/npm11.19.1 (manifest packageManager12.2, not claimed qualified), actual one Core2.47 physical/loaded copy; locked graph intact. Existing two focused files21/21 pass, native modules and published0.10 API/consumer checks pass. Source, manifest and lock unchanged; own real node_modules/private cache only. Details remain in coordinator evidence, not copied private logs in the repo. Real inferring-store/new output/build/fullsuite remain pending.
 
-### Phase1A checkpoint — root acceptance pending
+### Phase1A locally accepted; Phase1B authorized
 
 Cursor/Grok-only output is frozen as Provider `2ff6feaea08f8ea9249c3c618b37598eb6207781ab716eacedd340e42d791ed1` plus six typed tests `7c3dbf2727d349661eacf635b0d47f967a2c83c2aa6a4ccfc963255ba2cf155d`; candidate manifest `8e5ba3a10cf9dee6b46b15272a8a4da0bcb9b4368a7f2b58f70923d07f106b98`. Existing test files, other production source, package and lock remain unchanged. Coordinator made no direct product edits.
 
@@ -33,7 +33,7 @@ Actual own Node24.22/Core2.47/Vitest5.1 gates: focused3files27/27 pass (818ms ru
 
 The actual InMemoryDataset refuses bulk where UPDATE. Tests assert that genuine selected-target refusal and absence of global fallback; successful persisted stale-unit effect remains the required real inferring-store gate. Unit fixtures now use the existing public upsertTranslationUnit in serial isolated setup, restoring sentinel in finally before target/concurrent assertions; no model/type/cast/unit-writer API expansion. Earlier read-only timeout, fixture/type failures and approval-stop outputs stay preserved. Fresh explicit user permission now covers relevant private source/tests/context to Cursor/Grok while excluding secrets, credentials, env files and real user data. All current external workers have exited and only the matching temporary project policy was removed.
 
-Root must review this checkpoint before Phase1B/source commit. Shape-key-copies/list/clear skip-option work has not begun. No new emitted JS/d.ts/public artifact, full suite, real-store successful staling, release, Changeset, source commit, PR/push/publication or completed CN handoff is claimed by these quick gates.
+Root accepted Phase1A locally within these limits and authorized its phase commit. See report004. Phase1B source is now authorized as a separate scoped slice; it has not begun. No new emitted JS/d.ts/public artifact, full suite, real-store successful staling, release, Changeset, source commit, PR/push/publication or completed CN handoff is claimed by these quick gates.
 
 ## Exact additive public contracts
 
@@ -90,7 +90,9 @@ When and only when captured skipInitialKeyReadFailure is true, isolate its FIRST
 
 ## Ordered implementation tasks — staged coordinator GO
 
-### Phase1 — one bounded source implementation and paired unit tests
+### Phase1 — bounded source implementation and paired unit tests
+
+Progress: Phase1A locally accepted (report004); Phase1B source authorized, validation and independent acceptance pending.
 
 Worker reads full two production files plus immediate query/version helpers and existing shape-copy/version-write tests. Implement the exact public contracts and threading above; no package/lock/Core/auth edits. Update existing mocks to model legitimate builders with exec where required, not production fixture carveouts. Keep public output/argument compatibility; consumers with no options compile unchanged.
 
