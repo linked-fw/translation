@@ -1,5 +1,19 @@
 # @\_linked/translation
 
+## 1.0.0
+
+### Major Changes
+
+- [#93](https://github.com/linked-fw/translation/pull/93) [`b8dbf4c`](https://github.com/linked-fw/translation/commit/b8dbf4c67f0ac7dbc924088c55a012a262909b62) Thanks [@flyon](https://github.com/flyon)! - The ontology is registered by `src/ontologies/index.ts` (core's `registerOntologies`), which the package entry imports; the package registers no prefix (an app's prefix map, `linked.app.json`, holds the prefixes; the ontology's data suggests one). `src/package.ts` exports `registerOntologies` instead of `linkedOntology`. Requires the `@_linked/core` major with `registerOntologies`. Removed: `ontologies/translation.register` and the `dataFiles` and `loadData` exports of `ontologies/translation`.
+
+### Patch Changes
+
+- [#93](https://github.com/linked-fw/translation/pull/93) [`38199c0`](https://github.com/linked-fw/translation/commit/38199c049bfac62c08aecb166d74d73c31277888) Thanks [@flyon](https://github.com/flyon)! - Comments and docs describe the host app generically.
+
+- [#93](https://github.com/linked-fw/translation/pull/93) [`65042b5`](https://github.com/linked-fw/translation/commit/65042b5cfaa05f47b9922268854c0306afe64ab0) Thanks [@flyon](https://github.com/flyon)! - The README and the ontology's comment state the first-party namespace rule as `https://linked.cm/ont/{name}/{localName}`, `{name}` being the ontology's name.
+
+- [#93](https://github.com/linked-fw/translation/pull/93) [`f209172`](https://github.com/linked-fw/translation/commit/f20917216e8a3c00a18f6cacb7abc13b758131f2) Thanks [@flyon](https://github.com/flyon)! - The ontology is declared in `package.json` `"linkedOntologies"` and its data states its suggested prefix and namespace (`vann:preferredNamespacePrefix`, `vann:preferredNamespaceUri`); the module stays hand-written (`"generated": false`). No import path or export changes.
+
 ## 0.10.0
 
 ### Minor Changes
