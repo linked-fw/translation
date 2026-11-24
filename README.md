@@ -122,8 +122,8 @@ deliberately not part of this package. They belong to the host application, so
 any app can use this runtime without depending on a particular host.
 
 The package targets `@_linked/core` 2.14.4. Its ontology terms live at
-`https://linked.cm/ont/translation/` (prefix `translation:`), following the
-first-party rule `https://linked.cm/ont/{ontologySlug}/{localName}`. Shape IRIs
+`https://linked.cm/ont/translation/` (suggested prefix `translation:`), following the
+first-party rule `https://linked.cm/ont/{name}/{localName}`, `{name}` being the ontology's name. Shape IRIs
 follow `https://linked.cm/shape/translation/{ShapeName}` (e.g.
 `https://linked.cm/shape/translation/TranslationKey`) and the package IRI is
 `https://linked.cm/pkg/translation`.

@@ -1,5 +1,5 @@
 /**
- * Shape and package IRIs follow the arch-02 public rule for first-party packages:
+ * Shape and package IRIs follow the public rule for first-party packages:
  * `https://linked.cm/shape/{publicSlug}/{ShapeName}` and
  * `https://linked.cm/pkg/{publicSlug}`.
  */

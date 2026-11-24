@@ -1,6 +1,6 @@
 /**
- * The exchange formats used to carry Create Now's name (`cn:`,
- * `create-now-*`, `createNowEscaping`). They now carry neutral,
+ * The exchange formats used to carry one host app's name in their
+ * identifiers (see `LEGACY_*` in the sources). They now carry neutral,
  * framework-level identifiers. Writers emit only the new spelling; readers
  * accept both, so a file exported by an older version still imports.
  *
