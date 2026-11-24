@@ -17,6 +17,7 @@ message-format
 mt
 react
 release
+shape-key-copies
 shapes/GlossaryTerm
 shapes/TranslationInventoryOrigin
 shapes/TranslationKey
